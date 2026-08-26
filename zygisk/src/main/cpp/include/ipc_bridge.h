@@ -10,11 +10,11 @@
 // We include the JNI bridge from 'native' to leverage its helper functions.
 #include <jni/jni_bridge.h>
 
-namespace vector::native::module {
+namespace commposed::native::module {
 
 /**
  * @class IPCBridge
- * @brief Manages Binder IPC communication with the Vector host service.
+ * @brief Manages Binder IPC communication with the CommPosed host service.
  *
  * This singleton class is the communication arm of the Zygisk module. Its key responsibilities are:
  * 1. Discovering and connecting to the central host service (the "manager").
@@ -44,7 +44,7 @@ public:
      * @param nice_name The process name.
      * @return A ScopedLocalRef to the Binder object, or nullptr on failure.
      */
-    lsplant::ScopedLocalRef<jobject> RequestAppBinder(JNIEnv *env, jstring nice_name);
+    commplant::ScopedLocalRef<jobject> RequestAppBinder(JNIEnv *env, jstring nice_name);
 
     /**
      * @brief Requests the system_server's dedicated Binder from the host service.
@@ -52,7 +52,7 @@ public:
      * @param bridgeServiceName rendezvous point used by the system_server
      * @return A ScopedLocalRef to the Binder object, or nullptr on failure.
      */
-    lsplant::ScopedLocalRef<jobject> RequestSystemServerBinder(JNIEnv *env,
+    commplant::ScopedLocalRef<jobject> RequestSystemServerBinder(JNIEnv *env,
                                                                std::string bridgeServiceName);
 
     /**
@@ -61,7 +61,7 @@ public:
      * @param system_server_binder The binder connected to the system server service.
      * @return A ScopedLocalRef to the application manager Binder, or nullptr on failure.
      */
-    lsplant::ScopedLocalRef<jobject> RequestManagerBinderFromSystemServer(
+    commplant::ScopedLocalRef<jobject> RequestManagerBinderFromSystemServer(
         JNIEnv *env, jobject system_server_binder);
 
     /**
@@ -108,8 +108,8 @@ private:
         ParcelWrapper(const ParcelWrapper &) = delete;
         ParcelWrapper &operator=(const ParcelWrapper &) = delete;
 
-        lsplant::ScopedLocalRef<jobject> data;
-        lsplant::ScopedLocalRef<jobject> reply;
+        commplant::ScopedLocalRef<jobject> data;
+        commplant::ScopedLocalRef<jobject> reply;
 
     private:
         JNIEnv *env_;
@@ -176,4 +176,4 @@ private:
     jmethodID exec_transact_replace_method_id_ = nullptr;
 };
 
-}  // namespace vector::native::module
+}  // namespace commposed::native::module

@@ -25,8 +25,8 @@ std::once_flag init_flag;
 std::map<std::string, std::string> signatures = {
     {"Lde/robv/android/xposed/", ""},         {"Landroid/app/AndroidApp", ""},
     {"Landroid/content/res/XRes", ""},        {"Landroid/content/res/XModule", ""},
-    {"Lio/github/libxposed/api/Xposed", ""},  {"Lorg/matrix/vector/core/", ""},
-    {"Lorg/matrix/vector/nativebridge/", ""}, {"Lorg/matrix/vector/service/", ""},
+    {"Lio/github/libxposed/api/Xposed", ""},  {"Lorg/commposed/core/", ""},
+    {"Lorg/commposed/nativebridge/", ""}, {"Lorg/commposed/service/", ""},
 };
 
 jclass class_file_descriptor = nullptr;
@@ -51,22 +51,22 @@ static void ensureInitialized(JNIEnv *env) {
     std::call_once(init_flag, [&]() {
         LOGD("ObfuscationManager.init");
 
-        if (auto file_descriptor = lsplant::JNI_FindClass(env, "java/io/FileDescriptor")) {
+        if (auto file_descriptor = commplant::JNI_FindClass(env, "java/io/FileDescriptor")) {
             class_file_descriptor =
-                static_cast<jclass>(lsplant::JNI_NewGlobalRef(env, file_descriptor));
+                static_cast<jclass>(commplant::JNI_NewGlobalRef(env, file_descriptor));
         } else
             return;
 
         method_file_descriptor_ctor =
-            lsplant::JNI_GetMethodID(env, class_file_descriptor, "<init>", "(I)V");
+            commplant::JNI_GetMethodID(env, class_file_descriptor, "<init>", "(I)V");
 
-        if (auto shared_memory = lsplant::JNI_FindClass(env, "android/os/SharedMemory")) {
+        if (auto shared_memory = commplant::JNI_FindClass(env, "android/os/SharedMemory")) {
             class_shared_memory =
-                static_cast<jclass>(lsplant::JNI_NewGlobalRef(env, shared_memory));
+                static_cast<jclass>(commplant::JNI_NewGlobalRef(env, shared_memory));
         } else
             return;
 
-        method_shared_memory_ctor = lsplant::JNI_GetMethodID(env, class_shared_memory, "<init>",
+        method_shared_memory_ctor = commplant::JNI_GetMethodID(env, class_shared_memory, "<init>",
                                                              "(Ljava/io/FileDescriptor;)V");
 
         auto regen = [](std::string_view original_signature) {
@@ -119,34 +119,34 @@ static void ensureInitialized(JNIEnv *env) {
     });
 }
 
-// Through the lsplant wrappers rather than raw JNI: each one clears a pending exception and logs
+// Through the commplant wrappers rather than raw JNI: each one clears a pending exception and logs
 // the Java stack behind it, which is what a failed lookup here would otherwise cost. Returning a
 // null jclass while leaving NoClassDefFoundError pending -- as the raw form did -- hands the next
 // JNI call undefined behaviour. They also return scoped references, so the local refs this loop
 // used to leak per entry are released on the spot.
 static jobject stringMapToJavaHashMap(JNIEnv *env, const std::map<std::string, std::string> &map) {
-    auto map_class = lsplant::JNI_FindClass(env, "java/util/HashMap");
+    auto map_class = commplant::JNI_FindClass(env, "java/util/HashMap");
     if (!map_class) return nullptr;
 
-    auto init = lsplant::JNI_GetMethodID(env, map_class, "<init>", "()V");
-    auto put = lsplant::JNI_GetMethodID(env, map_class, "put",
+    auto init = commplant::JNI_GetMethodID(env, map_class, "<init>", "()V");
+    auto put = commplant::JNI_GetMethodID(env, map_class, "put",
                                         "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
     if (!init || !put) return nullptr;
 
-    auto hash_map = lsplant::JNI_NewObject(env, map_class, init);
+    auto hash_map = commplant::JNI_NewObject(env, map_class, init);
     if (!hash_map) return nullptr;
 
     for (const auto &[key, value] : map) {
-        auto key_java = lsplant::JNI_NewStringUTF(env, key);
-        auto value_java = lsplant::JNI_NewStringUTF(env, value);
-        lsplant::JNI_CallObjectMethod(env, hash_map, put, key_java, value_java);
+        auto key_java = commplant::JNI_NewStringUTF(env, key);
+        auto value_java = commplant::JNI_NewStringUTF(env, value);
+        commplant::JNI_CallObjectMethod(env, hash_map, put, key_java, value_java);
     }
 
-    return lsplant::JNI_NewGlobalRef(env, hash_map);
+    return commplant::JNI_NewGlobalRef(env, hash_map);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_org_matrix_vector_daemon_utils_ObfuscationManager_getSignatures(
+Java_org_commposed_daemon_utils_ObfuscationManager_getSignatures(
     JNIEnv *env, [[maybe_unused]] jclass clazz) {
     ensureInitialized(env);
 
@@ -192,7 +192,7 @@ static int obfuscateDexBuffer(const void *dex_data, size_t size) {
 }
 
 extern "C" JNIEXPORT jobject JNICALL
-Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
+Java_org_commposed_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
                                                                     [[maybe_unused]] jclass clazz,
                                                                     jobject memory) {
     ensureInitialized(env);
@@ -238,9 +238,9 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
 
         // Wrap the duplicated FD into Java objects and return instantly
         auto java_fd =
-            lsplant::JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, fd);
+            commplant::JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, fd);
         auto java_sm =
-            lsplant::JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
+            commplant::JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
         return java_sm.release();
     }
 
@@ -258,9 +258,9 @@ Java_org_matrix_vector_daemon_utils_ObfuscationManager_obfuscateDex(JNIEnv *env,
 
     // Construct new SharedMemory object around the new_fd
     auto java_fd =
-        lsplant::JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, new_fd);
+        commplant::JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, new_fd);
     auto java_sm =
-        lsplant::JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
+        commplant::JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
 
     return java_sm.release();
 }

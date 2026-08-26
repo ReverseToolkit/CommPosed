@@ -1,7 +1,7 @@
 plugins { alias(libs.plugins.agp.lib) }
 
 android {
-    namespace = "org.matrix.vector.legacy"
+    namespace = "org.commposed.legacy"
 
     androidResources { enable = false }
 

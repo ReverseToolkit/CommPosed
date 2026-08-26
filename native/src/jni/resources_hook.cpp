@@ -15,7 +15,7 @@
 #include "jni/jni_hooks.h"
 #include "jni/resources_hook.h"
 
-namespace vector::native::jni {
+namespace commposed::native::jni {
 
 // --- Type Aliases for Native Android Framework Functions ---
 
@@ -119,14 +119,14 @@ static bool PrepareSymbols() {
         LOGW("Failed to find symbol: ResXMLParser::getStrings");
     }
     // Initialize another part of the resource framework that we depend on.
-    return android::ResStringPool::setup(lsplant::InitInfo{
+    return android::ResStringPool::setup(commplant::InitInfo{
         .art_symbol_resolver = [&](auto s) { return fw.template getSymbAddress<>(s); }});
 }
 
 /**
  * @brief JNI entry point to initialize the entire native resources hook.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, ResourcesHook, initXResourcesNative) {
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, ResourcesHook, initXResourcesNative) {
     const auto x_resources_class_name = GetXResourcesClassName();
     if (x_resources_class_name.empty()) {
         return JNI_FALSE;
@@ -147,7 +147,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, ResourcesHook, initXResourcesNative) {
     // Wrapped, like the lookup below: a missing method throws NoSuchMethodError, and the raw form
     // returned JNI_FALSE to Java with that exception still pending, so the caller saw a throw where
     // it had asked for a boolean.
-    methodXResourcesTranslateResId = lsplant::JNI_GetStaticMethodID(
+    methodXResourcesTranslateResId = commplant::JNI_GetStaticMethodID(
         env, classXResources, "translateResId",
         fmt::format("(I{}Landroid/content/res/Resources;)I", x_resources_jni_name));
     if (!methodXResourcesTranslateResId) {
@@ -155,7 +155,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, ResourcesHook, initXResourcesNative) {
         return JNI_FALSE;
     }
 
-    methodXResourcesTranslateAttrId = lsplant::JNI_GetStaticMethodID(
+    methodXResourcesTranslateAttrId = commplant::JNI_GetStaticMethodID(
         env, classXResources, "translateAttrId",
         fmt::format("(Ljava/lang/String;{})I", x_resources_jni_name));
     if (!methodXResourcesTranslateAttrId) {
@@ -174,8 +174,8 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, ResourcesHook, initXResourcesNative) {
  * @brief Removes the 'final' modifier from a Java class at runtime.
  * This allows the framework to create subclasses of what are normally final classes.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, ResourcesHook, makeInheritable, jclass target_class) {
-    if (lsplant::MakeClassInheritable(env, target_class)) {
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, ResourcesHook, makeInheritable, jclass target_class) {
+    if (commplant::MakeClassInheritable(env, target_class)) {
         return JNI_TRUE;
     }
     return JNI_FALSE;
@@ -197,8 +197,8 @@ jobject BuildDummySuperClassLoader(JNIEnv *env, jobject parent, const char *res_
 
     // Cache the class and constructor for InMemoryDexClassLoader.
     static auto in_memory_classloader =
-        lsplant::JNI_NewGlobalRef(env, lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader"));
-    static jmethodID initMid = lsplant::JNI_GetMethodID(
+        commplant::JNI_NewGlobalRef(env, commplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader"));
+    static jmethodID initMid = commplant::JNI_GetMethodID(
         env, in_memory_classloader, "<init>", "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
     if (!in_memory_classloader || !initMid) return nullptr;
 
@@ -218,21 +218,21 @@ jobject BuildDummySuperClassLoader(JNIEnv *env, jobject parent, const char *res_
     slicer::MemView image{dex_file.CreateImage()};
 
     // Wrap the memory buffer in a Java ByteBuffer.
-    auto dex_buffer = lsplant::JNI_NewDirectByteBuffer(env, const_cast<void *>(image.ptr()),
+    auto dex_buffer = commplant::JNI_NewDirectByteBuffer(env, const_cast<void *>(image.ptr()),
                                                        image.size());
     if (!dex_buffer) return nullptr;
 
     // Create and return a new InMemoryDexClassLoader instance. Released from its scope because it
     // is handed straight back to the caller.
-    return lsplant::JNI_NewObject(env, in_memory_classloader, initMid, dex_buffer, parent)
+    return commplant::JNI_NewObject(env, in_memory_classloader, initMid, dex_buffer, parent)
         .release();
 }
 
-VECTOR_DEF_NATIVE_METHOD(jobject, ResourcesHook, buildDummyClassLoader, jobject parent,
+COMMPOSED_DEF_NATIVE_METHOD(jobject, ResourcesHook, buildDummyClassLoader, jobject parent,
                          jstring resource_super_class, jstring typed_array_super_class) {
     return BuildDummySuperClassLoader(env, parent,
-                                      lsplant::JUTFString(env, resource_super_class).get(),
-                                      lsplant::JUTFString(env, typed_array_super_class).get());
+                                      commplant::JUTFString(env, resource_super_class).get(),
+                                      commplant::JUTFString(env, typed_array_super_class).get());
 }
 
 /**
@@ -378,7 +378,7 @@ static uint32_t *AttributeNameSlot(void *parser, const android::ResStringPool *s
  * @param origRes The original XResources object.
  * @param repRes The replacement Resources object.
  */
-VECTOR_DEF_NATIVE_METHOD(void, ResourcesHook, rewriteXmlReferencesNative, jlong parserPtr,
+COMMPOSED_DEF_NATIVE_METHOD(void, ResourcesHook, rewriteXmlReferencesNative, jlong parserPtr,
                          jobject origRes, jobject repRes) {
     // Cast the long from Java back to a native C++ pointer.
     // This is dangerous and assumes the Java code provides a valid pointer.
@@ -478,13 +478,13 @@ leave:
 
 // JNI method registration table.
 static JNINativeMethod gMethods[] = {
-    VECTOR_NATIVE_METHOD(ResourcesHook, initXResourcesNative, "()Z"),
-    VECTOR_NATIVE_METHOD(ResourcesHook, makeInheritable, "(Ljava/lang/Class;)Z"),
-    VECTOR_NATIVE_METHOD(ResourcesHook, buildDummyClassLoader,
+    COMMPOSED_NATIVE_METHOD(ResourcesHook, initXResourcesNative, "()Z"),
+    COMMPOSED_NATIVE_METHOD(ResourcesHook, makeInheritable, "(Ljava/lang/Class;)Z"),
+    COMMPOSED_NATIVE_METHOD(ResourcesHook, buildDummyClassLoader,
                          "(Ljava/lang/ClassLoader;Ljava/lang/String;Ljava/lang/"
                          "String;)Ljava/lang/ClassLoader;"),
-    VECTOR_NATIVE_METHOD(ResourcesHook, rewriteXmlReferencesNative,
+    COMMPOSED_NATIVE_METHOD(ResourcesHook, rewriteXmlReferencesNative,
                          "(JLjava/lang/Object;Landroid/content/res/Resources;)V")};
 
-void RegisterResourcesHook(JNIEnv *env) { REGISTER_VECTOR_NATIVE_METHODS(ResourcesHook); }
-}  // namespace vector::native::jni
+void RegisterResourcesHook(JNIEnv *env) { REGISTER_COMMPOSED_NATIVE_METHODS(ResourcesHook); }
+}  // namespace commposed::native::jni

@@ -16,15 +16,15 @@ add_library(xz_static STATIC ${XZ_SOURCES})
 target_compile_options(xz_static PRIVATE -DXZ_USE_CRC64)
 target_include_directories(xz_static PRIVATE ${XZ_INCLUDES})
 
-option(LSPLANT_BUILD_SHARED OFF)
+option(COMMPLANT_BUILD_SHARED OFF)
 option(Plugin.SymbolResolver OFF)
 option(FMT_INSTALL OFF)
 
 add_subdirectory(dobby)
 add_subdirectory(fmt)
-add_subdirectory(lsplant/lsplant/src/main/jni)
-target_compile_options(lsplant_static PUBLIC -Wno-gnu-anonymous-struct
-	# lsplant.cc's `operator""_uarr()` is a string literal operator template, which is a GNU
+add_subdirectory(commplant/commplant/src/main/jni)
+target_compile_options(commplant_static PUBLIC -Wno-gnu-anonymous-struct
+	# commplant.cc's `operator""_uarr()` is a string literal operator template, which is a GNU
 	# extension clang warns about under -Wpedantic. Upstream code we do not own, and the
 	# warning was printed once per ABI on every build.
 	-Wno-gnu-string-literal-operator-template)

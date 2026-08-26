@@ -12,7 +12,7 @@ using namespace std::literals::string_view_literals;
 
 #include <common/logging.h>
 
-namespace vector::native::module {
+namespace commposed::native::module {
 
 // Store the ID of the last caller whose framework transaction failed.
 // It's initialized to a value that won't match.
@@ -79,7 +79,7 @@ private:
 };
 
 // --- Binder IPC Protocol Constants ---
-// These are the "secret handshakes" used to communicate with the Vector manager service.
+// These are the "secret handshakes" used to communicate with the CommPosed manager service.
 
 // The name of the system service we use as a rendezvous point to find our manager service.
 // Using "activity" is a common technique as it's always available.
@@ -103,9 +103,9 @@ constexpr jint kActionGetBinder = 2;
  * @param bridge A pointer to the parent IPCBridge instance to access its cached JNI IDs.
  */
 IPCBridge::ParcelWrapper::ParcelWrapper(JNIEnv *env, IPCBridge *bridge)
-    : data(lsplant::JNI_CallStaticObjectMethod(env, bridge->parcel_class_, bridge->obtain_method_)),
+    : data(commplant::JNI_CallStaticObjectMethod(env, bridge->parcel_class_, bridge->obtain_method_)),
       reply(
-          lsplant::JNI_CallStaticObjectMethod(env, bridge->parcel_class_, bridge->obtain_method_)),
+          commplant::JNI_CallStaticObjectMethod(env, bridge->parcel_class_, bridge->obtain_method_)),
       env_(env),
       bridge_(bridge) {}
 
@@ -119,10 +119,10 @@ IPCBridge::ParcelWrapper::ParcelWrapper(JNIEnv *env, IPCBridge *bridge)
 IPCBridge::ParcelWrapper::~ParcelWrapper() {
     // Check if the parcel was successfully obtained before trying to recycle it.
     if (data) {
-        lsplant::JNI_CallVoidMethod(env_, data.get(), bridge_->recycle_method_);
+        commplant::JNI_CallVoidMethod(env_, data.get(), bridge_->recycle_method_);
     }
     if (reply) {
-        lsplant::JNI_CallVoidMethod(env_, reply.get(), bridge_->recycle_method_);
+        commplant::JNI_CallVoidMethod(env_, reply.get(), bridge_->recycle_method_);
     }
 }
 
@@ -145,13 +145,13 @@ void IPCBridge::Initialize(JNIEnv *env) {
     // If any of these fail, the IPC bridge is unusable.
 
     // ServiceManager
-    auto sm_class = lsplant::ScopedLocalRef(env, env->FindClass("android/os/ServiceManager"));
+    auto sm_class = commplant::ScopedLocalRef(env, env->FindClass("android/os/ServiceManager"));
     if (!sm_class) {
         LOGE("IPCBridge: ServiceManager class not found!");
         return;
     }
     service_manager_class_ = (jclass)env->NewGlobalRef(sm_class.get());
-    get_service_method_ = lsplant::JNI_GetStaticMethodID(
+    get_service_method_ = commplant::JNI_GetStaticMethodID(
         env, service_manager_class_, "getService", "(Ljava/lang/String;)Landroid/os/IBinder;");
     if (!get_service_method_) {
         LOGE("IPCBridge: ServiceManager.getService method not found!");
@@ -159,12 +159,12 @@ void IPCBridge::Initialize(JNIEnv *env) {
     }
 
     // IBinder
-    auto ibinder_class = lsplant::ScopedLocalRef(env, env->FindClass("android/os/IBinder"));
+    auto ibinder_class = commplant::ScopedLocalRef(env, env->FindClass("android/os/IBinder"));
     if (!ibinder_class) {
         LOGE("IPCBridge: IBinder class not found!");
         return;
     }
-    transact_method_ = lsplant::JNI_GetMethodID(env, ibinder_class.get(), "transact",
+    transact_method_ = commplant::JNI_GetMethodID(env, ibinder_class.get(), "transact",
                                                 "(ILandroid/os/Parcel;Landroid/os/Parcel;I)Z");
     if (!transact_method_) {
         LOGE("IPCBridge: IBinder.transact method not found!");
@@ -172,54 +172,54 @@ void IPCBridge::Initialize(JNIEnv *env) {
     }
 
     // Binder
-    auto binder_class = lsplant::ScopedLocalRef(env, env->FindClass("android/os/Binder"));
+    auto binder_class = commplant::ScopedLocalRef(env, env->FindClass("android/os/Binder"));
     if (!binder_class) {
         LOGE("IPCBridge: Binder class not found!");
         return;
     }
     binder_class_ = (jclass)env->NewGlobalRef(binder_class.get());
-    binder_ctor_ = lsplant::JNI_GetMethodID(env, binder_class_, "<init>", "()V");
+    binder_ctor_ = commplant::JNI_GetMethodID(env, binder_class_, "<init>", "()V");
     if (!binder_ctor_) {
         LOGE("IPCBridge: Binder constructor not found!");
         return;
     }
 
     // Parcel
-    auto parcel_class = lsplant::ScopedLocalRef(env, env->FindClass("android/os/Parcel"));
+    auto parcel_class = commplant::ScopedLocalRef(env, env->FindClass("android/os/Parcel"));
     if (!parcel_class) {
         LOGE("IPCBridge: Parcel class not found!");
         return;
     }
     parcel_class_ = (jclass)env->NewGlobalRef(parcel_class.get());
     obtain_method_ =
-        lsplant::JNI_GetStaticMethodID(env, parcel_class_, "obtain", "()Landroid/os/Parcel;");
-    recycle_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "recycle", "()V");
-    write_interface_token_method_ = lsplant::JNI_GetMethodID(
+        commplant::JNI_GetStaticMethodID(env, parcel_class_, "obtain", "()Landroid/os/Parcel;");
+    recycle_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "recycle", "()V");
+    write_interface_token_method_ = commplant::JNI_GetMethodID(
         env, parcel_class_, "writeInterfaceToken", "(Ljava/lang/String;)V");
-    write_int_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "writeInt", "(I)V");
+    write_int_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "writeInt", "(I)V");
     write_string_method_ =
-        lsplant::JNI_GetMethodID(env, parcel_class_, "writeString", "(Ljava/lang/String;)V");
-    write_strong_binder_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "writeStrongBinder",
+        commplant::JNI_GetMethodID(env, parcel_class_, "writeString", "(Ljava/lang/String;)V");
+    write_strong_binder_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "writeStrongBinder",
                                                            "(Landroid/os/IBinder;)V");
-    read_exception_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "readException", "()V");
+    read_exception_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "readException", "()V");
     read_strong_binder_method_ =
-        lsplant::JNI_GetMethodID(env, parcel_class_, "readStrongBinder", "()Landroid/os/IBinder;");
-    read_file_descriptor_method_ = lsplant::JNI_GetMethodID(
+        commplant::JNI_GetMethodID(env, parcel_class_, "readStrongBinder", "()Landroid/os/IBinder;");
+    read_file_descriptor_method_ = commplant::JNI_GetMethodID(
         env, parcel_class_, "readFileDescriptor", "()Landroid/os/ParcelFileDescriptor;");
-    read_int_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "readInt", "()I");
-    read_long_method_ = lsplant::JNI_GetMethodID(env, parcel_class_, "readLong", "()J");
+    read_int_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "readInt", "()I");
+    read_long_method_ = commplant::JNI_GetMethodID(env, parcel_class_, "readLong", "()J");
     read_string_method_ =
-        lsplant::JNI_GetMethodID(env, parcel_class_, "readString", "()Ljava/lang/String;");
+        commplant::JNI_GetMethodID(env, parcel_class_, "readString", "()Ljava/lang/String;");
 
     // ParcelFileDescriptor
     auto pfd_class =
-        lsplant::ScopedLocalRef(env, env->FindClass("android/os/ParcelFileDescriptor"));
+        commplant::ScopedLocalRef(env, env->FindClass("android/os/ParcelFileDescriptor"));
     if (!pfd_class) {
         LOGE("IPCBridge: ParcelFileDescriptor class not found!");
         return;
     }
     parcel_fd_class_ = (jclass)env->NewGlobalRef(pfd_class.get());
-    detach_fd_method_ = lsplant::JNI_GetMethodID(env, parcel_fd_class_, "detachFd", "()I");
+    detach_fd_method_ = commplant::JNI_GetMethodID(env, parcel_fd_class_, "detachFd", "()I");
     if (!detach_fd_method_) {
         LOGE("IPCBridge: ParcelFileDescriptor.detachFd method not found!");
         return;
@@ -229,15 +229,15 @@ void IPCBridge::Initialize(JNIEnv *env) {
     initialized_ = true;
 }
 
-lsplant::ScopedLocalRef<jobject> IPCBridge::RequestAppBinder(JNIEnv *env, jstring nice_name) {
+commplant::ScopedLocalRef<jobject> IPCBridge::RequestAppBinder(JNIEnv *env, jstring nice_name) {
     if (!initialized_) {
         LOGE("RequestAppBinder failed: IPCBridge not initialized.");
         return {env, nullptr};
     }
 
     // Get the rendezvous service from the Android ServiceManager.
-    auto service_name = lsplant::ScopedLocalRef(env, env->NewStringUTF(kBridgeServiceName.data()));
-    auto bridge_service = lsplant::JNI_CallStaticObjectMethod(
+    auto service_name = commplant::ScopedLocalRef(env, env->NewStringUTF(kBridgeServiceName.data()));
+    auto bridge_service = commplant::JNI_CallStaticObjectMethod(
         env, service_manager_class_, get_service_method_, service_name.get());
     if (!bridge_service) {
         LOGE("Could not get rendezvous service '{}'. Manager not available?",
@@ -256,33 +256,33 @@ lsplant::ScopedLocalRef<jobject> IPCBridge::RequestAppBinder(JNIEnv *env, jstrin
     // If our process dies, the manager service will be notified that this binder has died,
     // allowing it to clean up resources.
     auto heartbeat_binder =
-        lsplant::ScopedLocalRef(env, env->NewObject(binder_class_, binder_ctor_));
+        commplant::ScopedLocalRef(env, env->NewObject(binder_class_, binder_ctor_));
     if (!heartbeat_binder) {
         LOGE("Failed to create heartbeat binder.");
         return {env, nullptr};
     }
 
     // Write the request data to the 'data' parcel.
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, kActionGetBinder);
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_string_method_, nice_name);
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_strong_binder_method_,
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, kActionGetBinder);
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_string_method_, nice_name);
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_strong_binder_method_,
                                 heartbeat_binder.get());
 
     // Perform the transaction.
-    bool success = lsplant::JNI_CallBooleanMethod(env, bridge_service.get(), transact_method_,
+    bool success = commplant::JNI_CallBooleanMethod(env, bridge_service.get(), transact_method_,
                                                   kBridgeTransactionCode, parcels.data.get(),
                                                   parcels.reply.get(), 0);
 
-    lsplant::ScopedLocalRef<jobject> result_binder = {env, nullptr};
+    commplant::ScopedLocalRef<jobject> result_binder = {env, nullptr};
     if (success) {
         // Read the reply. CRITICAL: must call readException first.
-        lsplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
+        commplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
         if (env->ExceptionCheck()) {
             LOGW("Remote exception received while requesting app binder.");
             env->ExceptionClear();
         } else {
             result_binder =
-                lsplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_strong_binder_method_);
+                commplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_strong_binder_method_);
             if (result_binder) {
                 // IMPORTANT: Keep the heartbeat binder alive by making it a global ref.
                 // If we don't do this, it gets garbage collected and the remote service
@@ -297,22 +297,22 @@ lsplant::ScopedLocalRef<jobject> IPCBridge::RequestAppBinder(JNIEnv *env, jstrin
     return result_binder;
 }
 
-lsplant::ScopedLocalRef<jobject> IPCBridge::RequestSystemServerBinder(
+commplant::ScopedLocalRef<jobject> IPCBridge::RequestSystemServerBinder(
     JNIEnv *env, std::string bridgeServiceName) {
     if (!initialized_) {
         LOGE("RequestSystemServerBinder failed: IPCBridge not initialized.");
         return {env, nullptr};
     }
 
-    auto service_name = lsplant::ScopedLocalRef(env, env->NewStringUTF(bridgeServiceName.data()));
-    lsplant::ScopedLocalRef<jobject> binder = {env, nullptr};
+    auto service_name = commplant::ScopedLocalRef(env, env->NewStringUTF(bridgeServiceName.data()));
+    commplant::ScopedLocalRef<jobject> binder = {env, nullptr};
 
     // The daemon process and system_server specialization run in parallel.
     // On slower devices, the daemon may take several seconds to call addService.
     // We poll for up to 10 seconds to ensure the early IPC channel for system_server is available.
     const int max_retry = 10;
     for (int i = 0; i < max_retry; ++i) {
-        binder = lsplant::JNI_CallStaticObjectMethod(env, service_manager_class_,
+        binder = commplant::JNI_CallStaticObjectMethod(env, service_manager_class_,
                                                      get_service_method_, service_name.get());
         if (binder) {
             LOGI("Got system server binder via {} on attempt {}.", bridgeServiceName.data(), i + 1);
@@ -327,34 +327,34 @@ lsplant::ScopedLocalRef<jobject> IPCBridge::RequestSystemServerBinder(
     return {env, nullptr};
 }
 
-lsplant::ScopedLocalRef<jobject> IPCBridge::RequestManagerBinderFromSystemServer(
+commplant::ScopedLocalRef<jobject> IPCBridge::RequestManagerBinderFromSystemServer(
     JNIEnv *env, jobject system_server_binder) {
     ParcelWrapper parcels(env, this);
     auto heartbeat_binder =
-        lsplant::ScopedLocalRef(env, env->NewObject(binder_class_, binder_ctor_));
-    auto system_name = lsplant::ScopedLocalRef(env, env->NewStringUTF("system"));
+        commplant::ScopedLocalRef(env, env->NewObject(binder_class_, binder_ctor_));
+    auto system_name = commplant::ScopedLocalRef(env, env->NewStringUTF("system"));
 
     // Populate the request
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, getuid());
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, getpid());
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_string_method_, system_name.get());
-    lsplant::JNI_CallVoidMethod(env, parcels.data.get(), write_strong_binder_method_,
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, getuid());
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_int_method_, getpid());
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_string_method_, system_name.get());
+    commplant::JNI_CallVoidMethod(env, parcels.data.get(), write_strong_binder_method_,
                                 heartbeat_binder.get());
 
     // Transact
-    bool success = lsplant::JNI_CallBooleanMethod(env, system_server_binder, transact_method_,
+    bool success = commplant::JNI_CallBooleanMethod(env, system_server_binder, transact_method_,
                                                   kBridgeTransactionCode, parcels.data.get(),
                                                   parcels.reply.get(), 0);
 
-    lsplant::ScopedLocalRef<jobject> result_binder = {env, nullptr};
+    commplant::ScopedLocalRef<jobject> result_binder = {env, nullptr};
     if (success) {
-        lsplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
+        commplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
         if (env->ExceptionCheck()) {
             LOGW("Remote exception while getting manager binder from system_server.");
             env->ExceptionClear();
         } else {
             result_binder =
-                lsplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_strong_binder_method_);
+                commplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_strong_binder_method_);
             if (result_binder) {
                 env->NewGlobalRef(heartbeat_binder.get());  // Keep heartbeat alive
             }
@@ -371,7 +371,7 @@ std::tuple<int, size_t> IPCBridge::FetchFrameworkDex(JNIEnv *env, jobject binder
 
     ParcelWrapper parcels(env, this);
     bool success =
-        lsplant::JNI_CallBooleanMethod(env, binder, transact_method_, kDexTransactionCode,
+        commplant::JNI_CallBooleanMethod(env, binder, transact_method_, kDexTransactionCode,
                                        parcels.data.get(), parcels.reply.get(), 0);
 
     if (!success) {
@@ -379,7 +379,7 @@ std::tuple<int, size_t> IPCBridge::FetchFrameworkDex(JNIEnv *env, jobject binder
         return {-1, 0};
     }
 
-    lsplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
+    commplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
     if (env->ExceptionCheck()) {
         LOGE("Remote exception received while fetching DEX.");
         env->ExceptionClear();
@@ -387,15 +387,15 @@ std::tuple<int, size_t> IPCBridge::FetchFrameworkDex(JNIEnv *env, jobject binder
     }
 
     auto pfd =
-        lsplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_file_descriptor_method_);
+        commplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_file_descriptor_method_);
     if (!pfd) {
         LOGE("Received null ParcelFileDescriptor for DEX.");
         return {-1, 0};
     }
 
-    int fd = lsplant::JNI_CallIntMethod(env, pfd.get(), detach_fd_method_);
+    int fd = commplant::JNI_CallIntMethod(env, pfd.get(), detach_fd_method_);
     size_t size = static_cast<size_t>(
-        lsplant::JNI_CallLongMethod(env, parcels.reply.get(), read_long_method_));
+        commplant::JNI_CallLongMethod(env, parcels.reply.get(), read_long_method_));
 
     LOGV("Fetched framework DEX: fd={}, size={}", fd, size);
     return {fd, size};
@@ -408,7 +408,7 @@ std::map<std::string, std::string> IPCBridge::FetchObfuscationMap(JNIEnv *env, j
     }
 
     ParcelWrapper parcels(env, this);
-    bool success = lsplant::JNI_CallBooleanMethod(env, binder, transact_method_,
+    bool success = commplant::JNI_CallBooleanMethod(env, binder, transact_method_,
                                                   kObfuscationMapTransactionCode,
                                                   parcels.data.get(), parcels.reply.get(), 0);
 
@@ -417,25 +417,25 @@ std::map<std::string, std::string> IPCBridge::FetchObfuscationMap(JNIEnv *env, j
         return result_map;
     }
 
-    lsplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
+    commplant::JNI_CallVoidMethod(env, parcels.reply.get(), read_exception_method_);
     if (env->ExceptionCheck()) {
         LOGE("Remote exception received while fetching obfuscation map.");
         env->ExceptionClear();
         return result_map;
     }
 
-    int size = lsplant::JNI_CallIntMethod(env, parcels.reply.get(), read_int_method_);
+    int size = commplant::JNI_CallIntMethod(env, parcels.reply.get(), read_int_method_);
     if (size < 0 || (size % 2 != 0)) {
         LOGE("Invalid size for obfuscation map received: %d", size);
         return result_map;
     }
 
     for (int i = 0; i < size / 2; ++i) {
-        auto key_jstr = lsplant::JNI_Cast<jstring>(
-            lsplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_string_method_));
+        auto key_jstr = commplant::JNI_Cast<jstring>(
+            commplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_string_method_));
 
-        auto val_jstr = lsplant::JNI_Cast<jstring>(
-            lsplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_string_method_));
+        auto val_jstr = commplant::JNI_Cast<jstring>(
+            commplant::JNI_CallObjectMethod(env, parcels.reply.get(), read_string_method_));
 
         if (env->ExceptionCheck() || !key_jstr || !val_jstr) {
             LOGE("Error reading string from parcel for obfuscation map.");
@@ -444,8 +444,8 @@ std::map<std::string, std::string> IPCBridge::FetchObfuscationMap(JNIEnv *env, j
             return result_map;
         }
 
-        lsplant::JUTFString key_str(env, key_jstr.get());
-        lsplant::JUTFString val_str(env, val_jstr.get());
+        commplant::JUTFString key_str(env, key_jstr.get());
+        commplant::JUTFString val_str(env, val_jstr.get());
         result_map[key_str.get()] = val_str.get();
     }
 
@@ -517,7 +517,7 @@ void IPCBridge::HookBridge(JNIEnv *env) {
     // Get framework-specific Java classes and methods ---
     const auto &obfs_map = ConfigBridge::GetInstance()->obfuscation_map();
     std::string bridge_service_class_name;
-    bridge_service_class_name = obfs_map.at("org.matrix.vector.service.") + "BridgeService";
+    bridge_service_class_name = obfs_map.at("org.commposed.service.") + "BridgeService";
 
     auto bridge_class_ref =
         Context::GetInstance()->FindClassFromCurrentLoader(env, bridge_service_class_name);
@@ -525,9 +525,9 @@ void IPCBridge::HookBridge(JNIEnv *env) {
         LOGE("Failed to find BridgeService class '{}'", bridge_service_class_name.c_str());
         return;
     }
-    bridge_service_class_ = lsplant::JNI_NewGlobalRef(env, bridge_class_ref);
+    bridge_service_class_ = commplant::JNI_NewGlobalRef(env, bridge_class_ref);
 
-    exec_transact_replace_method_id_ = lsplant::JNI_GetStaticMethodID(
+    exec_transact_replace_method_id_ = commplant::JNI_GetStaticMethodID(
         env, bridge_service_class_, "execTransact", "(Landroid/os/IBinder;IJJI)Z");
     if (!exec_transact_replace_method_id_) {
         LOGE("Failed to find static method BridgeService.execTransact!");
@@ -537,7 +537,7 @@ void IPCBridge::HookBridge(JNIEnv *env) {
     // --- Prepare the JNI hook ---
     // Get the original method ID for android.os.Binder.execTransact
     exec_transact_backup_method_id_ =
-        lsplant::JNI_GetMethodID(env, binder_class_, "execTransact", "(IJJI)Z");
+        commplant::JNI_GetMethodID(env, binder_class_, "execTransact", "(IJJI)Z");
     if (!exec_transact_backup_method_id_) {
         LOGE("Failed to find original method Binder.execTransact!");
         return;
@@ -570,4 +570,4 @@ void IPCBridge::HookBridge(JNIEnv *env) {
     LOGI("IPC Bridge JNI hook installed successfully.");
 }
 
-}  // namespace vector::native::module
+}  // namespace commposed::native::module

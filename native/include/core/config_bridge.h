@@ -9,7 +9,7 @@
  * @brief A native-side cache for configuration data, currently only the obfuscation map.
  */
 
-namespace vector::native {
+namespace commposed::native {
 
 /**
  * @class ConfigBridge
@@ -45,4 +45,4 @@ protected:
     static std::unique_ptr<ConfigBridge> instance_;
 };
 
-}  // namespace vector::native
+}  // namespace commposed::native

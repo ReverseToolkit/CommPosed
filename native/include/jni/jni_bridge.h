@@ -12,7 +12,7 @@
  *
  */
 
-namespace vector::native::jni {
+namespace commposed::native::jni {
 
 /**
  * @brief Returns the number of elements in a statically-allocated C-style array.
@@ -37,20 +37,20 @@ template <typename T, size_t N>
  * It reads the obfuscation map to find the correct, potentially obfuscated,
  * package name for the native bridge classes.
  *
- * @return The JNI signature prefix (e.g., "org/matrix/vector/nativebridge/").
+ * @return The JNI signature prefix (e.g., "org/commposed/nativebridge/").
  */
 inline std::string GetNativeBridgeSignature() {
     auto *bridge = ConfigBridge::GetInstance();
     if (bridge) {
         const auto &obfs_map = bridge->obfuscation_map();
         // The key must match what the Java build script places in the map.
-        auto it = obfs_map.find("org.matrix.vector.nativebridge.");
+        auto it = obfs_map.find("org.commposed.nativebridge.");
         if (it != obfs_map.end()) {
             return it->second;
         }
     }
     // Fallback or default value if not found.
-    return "org/matrix/vector/nativebridge/";
+    return "org/commposed/nativebridge/";
 }
 
 /**
@@ -73,14 +73,14 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
     }
     // Wrapped: a failed registration throws NoSuchMethodError, and returning false while that
     // exception is still pending would hand the next JNI call undefined behaviour.
-    return lsplant::JNI_RegisterNatives(env, clazz, methods, method_count) == JNI_OK;
+    return commplant::JNI_RegisterNatives(env, clazz, methods, method_count) == JNI_OK;
 }
 
 // A helper cast for the native method function pointers.
-#define VECTOR_JNI_CAST(to) reinterpret_cast<to>
+#define COMMPOSED_JNI_CAST(to) reinterpret_cast<to>
 
 /**
- * @def VECTOR_NATIVE_METHOD(className, functionName, signature)
+ * @def COMMPOSED_NATIVE_METHOD(className, functionName, signature)
  * @brief Defines a JNINativeMethod entry.
  *
  * This macro constructs a JNINativeMethod struct, automatically
@@ -90,9 +90,9 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
  * @param functionName The name of the Java method (e.g., "hookMethod").
  * @param signature The JNI signature of the method (e.g., "(I)V").
  */
-#define VECTOR_NATIVE_METHOD(className, functionName, signature)                                   \
+#define COMMPOSED_NATIVE_METHOD(className, functionName, signature)                                   \
     {#functionName, signature,                                                                     \
-     VECTOR_JNI_CAST(void *)(Java_org_matrix_vector_nativebridge_##className##_##functionName)}
+     COMMPOSED_JNI_CAST(void *)(Java_org_commposed_nativebridge_##className##_##functionName)}
 
 /**
  * @def JNI_START
@@ -101,24 +101,24 @@ inline bool RegisterNativeMethodsInternal(JNIEnv *env, std::string_view class_na
 #define JNI_START [[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass clazz
 
 /**
- * @def VECTOR_DEF_NATIVE_METHOD(ret, className, functionName, ...)
+ * @def COMMPOSED_DEF_NATIVE_METHOD(ret, className, functionName, ...)
  * @brief Defines the function signature for a JNI native method implementation.
  *
  * This macro creates the full C++ function definition with
  * the correct JNI name-mangling convention.
  */
-#define VECTOR_DEF_NATIVE_METHOD(ret, className, functionName, ...)                                \
+#define COMMPOSED_DEF_NATIVE_METHOD(ret, className, functionName, ...)                                \
     extern "C" JNIEXPORT ret JNICALL                                                               \
-        Java_org_matrix_vector_nativebridge_##className##_##functionName(JNI_START, ##__VA_ARGS__)
+        Java_org_commposed_nativebridge_##className##_##functionName(JNI_START, ##__VA_ARGS__)
 
 /**
- * @def REGISTER_VECTOR_NATIVE_METHODS(class_name)
+ * @def REGISTER_COMMPOSED_NATIVE_METHODS(class_name)
  * @brief Registers all methods defined in the `gMethods` array for a given class.
  *
  * This is the final step in linking the C++ implementations to the Java native methods.
  */
-#define REGISTER_VECTOR_NATIVE_METHODS(class_name)                                                 \
+#define REGISTER_COMMPOSED_NATIVE_METHODS(class_name)                                                 \
     RegisterNativeMethodsInternal(env, GetNativeBridgeSignature() + #class_name, gMethods,         \
                                   ArraySize(gMethods))
 
-}  // namespace vector::native::jni
+}  // namespace commposed::native::jni

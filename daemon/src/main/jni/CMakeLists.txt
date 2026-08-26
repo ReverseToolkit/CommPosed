@@ -3,7 +3,7 @@ project(daemon)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_subdirectory(${VECTOR_ROOT}/external external)
+add_subdirectory(${COMMPOSED_ROOT}/external external)
 
 set(SOURCES
         dex2oat.cpp
@@ -15,7 +15,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE lsplant_static dex_builder_static android log)
+target_link_libraries(${PROJECT_NAME} PRIVATE commplant_static dex_builder_static android log)
 
 if (DEFINED DEBUG_SYMBOLS_PATH)
     message(STATUS "Debug symbols will be placed at ${DEBUG_SYMBOLS_PATH}")

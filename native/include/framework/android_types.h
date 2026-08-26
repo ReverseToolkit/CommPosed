@@ -5,7 +5,7 @@
 
 #include "utils/hook_helper.hpp"
 
-using lsplant::operator""_sym;
+using commplant::operator""_sym;
 
 // References:
 // https://cs.android.com/android/platform/superproject/+/android-latest-release:frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h
@@ -142,7 +142,7 @@ public:
         return {nullptr, 0u};
     }
 
-    static bool setup(const lsplant::HookHandler &handler) {
+    static bool setup(const commplant::HookHandler &handler) {
         return handler(stringAt_) || handler(stringAtS_);
     }
 };

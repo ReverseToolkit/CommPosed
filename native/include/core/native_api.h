@@ -16,7 +16,7 @@
  * This component is responsible for hooking the dynamic library loader (`dlopen`) to
  * detect when registered native modules are loaded.
  * It then provides these modules with a set of function pointers for
- * interacting with the Vector core, primarily for creating native hooks.
+ * interacting with the CommPosed core, primarily for creating native hooks.
  */
 
 // NOTE: The following type definitions form a public ABI for native modules.
@@ -24,31 +24,31 @@
 
 /*
  * =========================================================================================
- *  Vector Native API Interface
+ *  CommPosed Native API Interface
  * =========================================================================================
  *
  * This following function types and data structures allow a native library (your module) to
- * interface with the Vector framework.
- * The core idea is that Vector provides a set of powerful tools (like function hooking),
+ * interface with the CommPosed framework.
+ * The core idea is that CommPosed provides a set of powerful tools (like function hooking),
  * and your module consumes these tools through a well-defined entry point.
  *
  * The interaction flow is as follows:
  *
- *   1. Vector intercepts the loading of your native library (e.g., libnative.so).
- *   2. Vector looks for and calls the `native_init` function within your library.
- *   3. Vector passes a `NativeAPIEntries` struct to your `native_init`,
- *      which contains function pointers to Vector's hooking
+ *   1. CommPosed intercepts the loading of your native library (e.g., libnative.so).
+ *   2. CommPosed looks for and calls the `native_init` function within your library.
+ *   3. CommPosed passes a `NativeAPIEntries` struct to your `native_init`,
+ *      which contains function pointers to CommPosed's hooking
  *      and unhooking implementations (powered by Dobby).
  *   4. Your `native_init` function saves these function pointers for later use
  *      and returns a callback function (`NativeOnModuleLoaded`).
- *   5. Vector will then invoke your returned callback every time
+ *   5. CommPosed will then invoke your returned callback every time
  *      a new native library is loaded into the target process,
  *      allowing you to perform "late" hooks on specific libraries.
  *
  *
  * Initialization Flow
  *
- *   Vector Framework                    Your Native Module (e.g., libnative.so)
+ *   CommPosed Framework                    Your Native Module (e.g., libnative.so)
  *   -----------------                    -------------------------------------
  *
  *        |                                            |
@@ -89,17 +89,17 @@ struct NativeAPIEntries {
 
 // NOTE: Module developers should not include the following INTERNAL definitions.
 
-namespace vector::native {
+namespace commposed::native {
 
 // The entry point function that native modules must export (`native_init`).
 using NativeInit = NativeOnModuleLoaded (*)(const NativeAPIEntries *entries);
 
 /**
  * @brief Installs the hooks required for the native API to function.
- * @param handler The LSPlant hook handler.
+ * @param handler The CommPlant hook handler.
  * @return True on success, false on failure.
  */
-bool InstallNativeAPI(const lsplant::HookHandler &handler);
+bool InstallNativeAPI(const commplant::HookHandler &handler);
 
 /**
  * @brief Registers a native library by its filename for module initialization.
@@ -144,4 +144,4 @@ inline int UnhookInline(void *original) {
     return DobbyDestroy(original);
 }
 
-}  // namespace vector::native
+}  // namespace commposed::native

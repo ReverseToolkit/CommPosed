@@ -78,7 +78,7 @@ abstract class GitLatestTagValueSource : ValueSource<String, ValueSourceParamete
  * The separator says which kind of "where" follows, because they mean opposite things about whether
  * the commit describes the binary:
  *
- * *On GitHub Actions*, `93d66473-JingMatrix-Vector` — the commit, then the repository the code came
+ * *On GitHub Actions*, `93d66473-JingMatrix-CommPosed` — the commit, then the repository the code came
  * from. Forks build the same code from the same commits, so the hash alone identifies a *revision*
  * and not a *build*, and a fork's artifact was indistinguishable from ours.
  *
@@ -86,7 +86,7 @@ abstract class GitLatestTagValueSource : ValueSource<String, ValueSourceParamete
  * because on a pull request both defaults name something other than the code that was built:
  *
  * `GITHUB_REPOSITORY` is the repository that *ran* the workflow. A pull request from a fork is
- * built here, so it would stamp `JingMatrix/Vector` onto a branch that has never been near it —
+ * built here, so it would stamp `JingMatrix/CommPosed` onto a branch that has never been near it —
  * which is exactly the artifact the name most needs to distinguish.
  *
  * `HEAD` is worse. For a pull request the runner checks out an ephemeral merge of the branch into
@@ -94,7 +94,7 @@ abstract class GitLatestTagValueSource : ValueSource<String, ValueSourceParamete
  * up by anyone who reads it off a device, and is gone once the run is. The commit that was pushed
  * is the one that identifies the build.
  *
- * So the workflow passes both in: `VECTOR_BUILD_REPOSITORY` and `VECTOR_BUILD_COMMIT`, each taken
+ * So the workflow passes both in: `COMMPOSED_BUILD_REPOSITORY` and `COMMPOSED_BUILD_COMMIT`, each taken
  * from `github.event.pull_request.head.*` when there is a pull request and from the ordinary
  * default when there is not — outside a pull request the two agree anyway. Absent either, this
  * falls back to what the environment says and to `HEAD`, which covers a workflow too old to set
@@ -210,17 +210,17 @@ val versionHashProvider =
         // the branch that was pushed; GitHub's defaults name the run that built it.
         parameters.buildRepository.set(
             providers
-                .environmentVariable("VECTOR_BUILD_REPOSITORY")
+                .environmentVariable("COMMPOSED_BUILD_REPOSITORY")
                 .orElse(providers.environmentVariable("GITHUB_REPOSITORY"))
                 .orElse("")
         )
-        parameters.buildCommit.set(providers.environmentVariable("VECTOR_BUILD_COMMIT").orElse(""))
+        parameters.buildCommit.set(providers.environmentVariable("COMMPOSED_BUILD_COMMIT").orElse(""))
     }
 val versionNameProvider = providers.of(GitLatestTagValueSource::class.java) {}
 
 val injectedPackageName = "com.android.shell"
 val injectedPackageUid = 2000
-val defaultManagerPackageName = "org.matrix.vector.manager"
+val defaultManagerPackageName = "org.commposed.manager"
 
 val androidTargetSdkVersion = 37
 val androidMinSdkVersion = 27
@@ -302,7 +302,7 @@ subprojects {
                 val args =
                     listOf(
                         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-                        "-DVECTOR_ROOT=${rootDir.absolutePath}",
+                        "-DCOMMPOSED_ROOT=${rootDir.absolutePath}",
                         // Enforce 16 KB page size alignment for Android 15+ compatibility
                         "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
                         "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
@@ -325,6 +325,10 @@ subprojects {
                                 layout.buildDirectory.dir("symbols").get().asFile.absolutePath
                             }"
                         )
+                        // RelWithDebInfo already defines NDEBUG; this makes the native log
+                        // headers go silent even if a consumer changes the CMake build type.
+                        cFlags.add("-DLOG_DISABLED")
+                        cppFlags.add("-DLOG_DISABLED")
                     }
                 }
             }

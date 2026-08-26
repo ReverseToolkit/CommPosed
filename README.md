@@ -1,13 +1,13 @@
 <div align="center">
 
-# Vector Framework
+# CommPosed Framework
 
 **A high-performance ART hooking framework for modern Android**
 
-[![Build](https://img.shields.io/github/actions/workflow/status/JingMatrix/Vector/core.yml?branch=master&event=push&logo=github&label=Build)](https://github.com/JingMatrix/Vector/actions/workflows/core.yml?query=event%3Apush+branch%3Amaster+is%3Acompleted)
+[![Build](https://img.shields.io/github/actions/workflow/status/JingMatrix/CommPosed/core.yml?branch=master&event=push&logo=github&label=Build)](https://github.com/JingMatrix/CommPosed/actions/workflows/core.yml?query=event%3Apush+branch%3Amaster+is%3Acompleted)
 [![Crowdin](https://img.shields.io/badge/Localization-Crowdin-blueviolet?logo=Crowdin)](https://crowdin.com/project/lsposed_jingmatrix)
-[![Download](https://img.shields.io/github/v/release/JingMatrix/Vector?color=orange&logoColor=orange&label=Download&logo=DocuSign)](https://github.com/JingMatrix/Vector/releases/latest)
-[![Total](https://shields.io/github/downloads/JingMatrix/Vector/total?logo=Bookmeter&label=Counts&logoColor=yellow&color=yellow)](https://github.com/JingMatrix/Vector/releases)
+[![Download](https://img.shields.io/github/v/release/JingMatrix/CommPosed?color=orange&logoColor=orange&label=Download&logo=DocuSign)](https://github.com/JingMatrix/CommPosed/releases/latest)
+[![Total](https://shields.io/github/downloads/JingMatrix/CommPosed/total?logo=Bookmeter&label=Counts&logoColor=yellow&color=yellow)](https://github.com/JingMatrix/CommPosed/releases)
 
 </div>
 
@@ -15,7 +15,7 @@
 
 ### Introduction
 
-Vector is a Zygisk module providing an ART hooking framework that maintains API consistency with the original Xposed. It is engineered on top of [LSPlant](https://github.com/JingMatrix/LSPlant) to deliver a stable, native-level instrumentation environment.
+CommPosed is a Zygisk module providing an ART hooking framework that maintains API consistency with the original Xposed. It is engineered on top of [CommPlant](https://github.com/JingMatrix/CommPlant) to deliver a stable, native-level instrumentation environment.
 
 The framework allows modules to modify system and application behavior in-memory. Because no APK files are modified, changes are non-destructive, easily reversible via reboot, and compatible across various ROMs and Android versions.
 
@@ -23,7 +23,7 @@ The framework allows modules to modify system and application behavior in-memory
 
 ### Compatibility
 
-Vector supports devices running **Android 8.1 through Android 17 Beta**.
+CommPosed supports devices running **Android 8.1 through Android 17 Beta**.
 
 > [!TIP]
 > This framework requires a recent installation of Magisk or KernelSU with Zygisk enabled.
@@ -44,8 +44,8 @@ Vector supports devices running **Android 8.1 through Android 17 Beta**.
 
 | Channel | Source |
 | :--- | :--- |
-| **Stable Releases** | [GitHub Releases](https://github.com/JingMatrix/Vector/releases) |
-| **Canary (CI) Builds** | [GitHub Actions](https://github.com/JingMatrix/Vector/actions/workflows/core.yml?query=branch%3Amaster) |
+| **Stable Releases** | [GitHub Releases](https://github.com/JingMatrix/CommPosed/releases) |
+| **Canary (CI) Builds** | [GitHub Actions](https://github.com/JingMatrix/CommPosed/actions/workflows/core.yml?query=branch%3Amaster) |
 
 > [!NOTE]
 > Debug builds are recommended for users encountering issues or performing troubleshooting.
@@ -63,8 +63,8 @@ Vector supports devices running **Android 8.1 through Android 17 Beta**.
 
 If you encounter issues or wish to help improve the project, please refer to the resources below.
 
-*   **Troubleshooting:** Consult the [guide](https://github.com/JingMatrix/Vector/issues/123) before reporting bugs.
-*   **Discussions:** Join our community on [GitHub Discussions](https://github.com/JingMatrix/Vector/discussions).
+*   **Troubleshooting:** Consult the [guide](https://github.com/JingMatrix/CommPosed/issues/123) before reporting bugs.
+*   **Discussions:** Join our community on [GitHub Discussions](https://github.com/JingMatrix/CommPosed/discussions).
 *   **Localization:** Help translate the project via [Crowdin](https://crowdin.com/project/lsposed_jingmatrix).
 
 > [!IMPORTANT]
@@ -78,17 +78,17 @@ If you encounter issues or wish to help improve the project, please refer to the
 
 ### Developer Resources
 
-Vector supports both legacy and modern hooking standards to ensure broad module compatibility.
+CommPosed supports both legacy and modern hooking standards to ensure broad module compatibility.
 
 *   [Legacy Xposed API](https://api.xposed.info/)
 *   [Modern libxposed API](https://libxposed.github.io/api/)
 *   [Xposed Module Repository](https://github.com/Xposed-Modules-Repo)
 
 > [!NOTE]
-> Vector supports the `libxposed` API via two git submodules: the [module API](./xposed/) and the [service API](./services/).
+> CommPosed supports the `libxposed` API via two git submodules: the [module API](./xposed/) and the [service API](./services/).
 >
-> A successful GitHub Actions build of the [master](https://github.com/JingMatrix/Vector/tree/master) branch indicates that Vector fully supports these APIs at those specific commits.
-> Developers are suggested to check out the same commits as Vector.
+> A successful GitHub Actions build of the [master](https://github.com/JingMatrix/CommPosed/tree/master) branch indicates that CommPosed fully supports these APIs at those specific commits.
+> Developers are suggested to check out the same commits as CommPosed.
 
 ---
 
@@ -97,9 +97,10 @@ Vector supports both legacy and modern hooking standards to ensure broad module 
 This project is made possible by the following open-source contributions:
 
 *   [Magisk](https://github.com/topjohnwu/Magisk/): The foundation of Android customization.
-*   [LSPlant](https://github.com/JingMatrix/LSPlant): The core ART hooking engine.
+*   [CommPlant](https://github.com/JingMatrix/CommPlant): The core ART hooking engine.
 *   [XposedBridge](https://github.com/rovo89/XposedBridge): The standard Xposed APIs.
 *   [Dobby](https://github.com/JingMatrix/Dobby): Inline hooking implementation.
+*   [Vector](https://github.com/JingMatrix/Vector): Immediate upstream.
 *   [LSPosed](https://github.com/LSPosed/LSPosed): Upstream source.
 *   [EdXposed](https://github.com/ElderDrivers/EdXposed): Upstream source, before LSPosed.
 *   [xz-embedded](https://github.com/tukaani-project/xz-embedded): Library decompression utilities.
@@ -118,4 +119,4 @@ This project is made possible by the following open-source contributions:
 
 ### License
 
-Vector is licensed under the [GNU General Public License v3](http://www.gnu.org/copyleft/gpl.html).
+CommPosed is licensed under the [GNU General Public License v3](http://www.gnu.org/copyleft/gpl.html).

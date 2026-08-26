@@ -18,7 +18,7 @@
  * It handles stripped ELF files by decompressing and parsing the `.gnu_debugdata` section.
  */
 
-namespace vector::native {
+namespace commposed::native {
 
 /**
  * @class ElfImage
@@ -191,4 +191,4 @@ constexpr uint32_t ElfImage::GnuHash(std::string_view name) {
     return h;
 }
 
-}  // namespace vector::native
+}  // namespace commposed::native

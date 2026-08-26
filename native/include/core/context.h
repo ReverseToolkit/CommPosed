@@ -2,7 +2,7 @@
 
 #include <sys/mman.h>
 
-#include <lsplant.hpp>
+#include <commplant.hpp>
 #include <memory>
 #include <string_view>
 #include <utils/jni_helper.hpp>
@@ -11,14 +11,14 @@
 
 /**
  * @file context.h
- * @brief Defines the core runtime context for the Vector native environment.
+ * @brief Defines the core runtime context for the CommPosed native environment.
  *
  * The Context class is a singleton that holds essential runtime information, such as
  * the injected class loader, and provides core functionalities like class finding and DEX loading.
  * It serves as the central hub for native operations.
  */
 
-namespace vector::native {
+namespace commposed::native {
 
 // Forward declaration from another module.
 class ConfigBridge;
@@ -62,13 +62,13 @@ public:
      * @brief Finds a class using the framework's injected class loader.
      *
      * This is the primary method for looking up classes that are part of the
-     * Vector framework's Java components.
+     * CommPosed framework's Java components.
      *
      * @param env The JNI environment.
      * @param class_name The fully qualified name of the class to find (dot-separated).
      * @return A ScopedLocalRef containing the jclass object, or nullptr if not found.
      */
-    [[nodiscard]] lsplant::ScopedLocalRef<jclass> FindClassFromCurrentLoader(
+    [[nodiscard]] commplant::ScopedLocalRef<jclass> FindClassFromCurrentLoader(
         JNIEnv *env, std::string_view class_name) const {
         return FindClassFromLoader(env, GetCurrentClassLoader(), class_name);
     }
@@ -153,7 +153,7 @@ protected:
      * @param class_name The name of the class to find.
      * @return A ScopedLocalRef containing the jclass, or nullptr if not found.
      */
-    static lsplant::ScopedLocalRef<jclass> FindClassFromLoader(JNIEnv *env, jobject class_loader,
+    static commplant::ScopedLocalRef<jclass> FindClassFromLoader(JNIEnv *env, jobject class_loader,
                                                                std::string_view class_name);
 
     /**
@@ -183,21 +183,21 @@ protected:
             LOGE("Cannot call method '{}', entry class is null", method_name.data());
             return false;
         }
-        jmethodID mid = lsplant::JNI_GetStaticMethodID(env, entry_class_, method_name, method_sig);
+        jmethodID mid = commplant::JNI_GetStaticMethodID(env, entry_class_, method_name, method_sig);
         if (!mid) {
             LOGE("Static method '{}' with signature '{}' not found", method_name.data(),
                  method_sig.data());
             return false;
         }
         env->CallStaticVoidMethod(entry_class_, mid,
-                                  lsplant::UnwrapScope(std::forward<Args>(args))...);
+                                  commplant::UnwrapScope(std::forward<Args>(args))...);
         // ClearException, not ExceptionDescribe: the latter writes the trace to stderr, and a
         // process forked from the zygote has nowhere for stderr to go, so the trace is simply lost.
         // This asks Java to render it and logs the result under our own tag, which is the only
         // place the stack still exists to be read.
-        if (auto trace = lsplant::ClearException(env)) {
+        if (auto trace = commplant::ClearException(env)) {
             LOGE("Java entry '{}' threw:\n{}", method_name.data(),
-                 lsplant::JUTFString(env, trace.get()).get());
+                 commplant::JUTFString(env, trace.get()).get());
             return false;
         }
         return true;
@@ -205,8 +205,8 @@ protected:
 
     // --- Virtual methods for platform-specific implementations ---
 
-    /// Initializes the ART hooking framework (LSPlant).
-    virtual void InitArtHooker(JNIEnv *env, const lsplant::InitInfo &initInfo);
+    /// Initializes the ART hooking framework (CommPlant).
+    virtual void InitArtHooker(JNIEnv *env, const commplant::InitInfo &initInfo);
 
     /// Registers all necessary JNI bridges and native hooks.
     virtual void InitHooks(JNIEnv *env);
@@ -228,4 +228,4 @@ protected:
     jclass entry_class_ = nullptr;
 };
 
-}  // namespace vector::native
+}  // namespace commposed::native

@@ -3,7 +3,7 @@
 #include "core/config_bridge.h"
 #include "jni/jni_hooks.h"
 
-namespace vector::native {
+namespace commposed::native {
 
 // Instantiate the singleton pointers for Context and ConfigBridge.
 std::unique_ptr<Context> Context::instance_;
@@ -33,9 +33,9 @@ Context::PreloadedDex::~PreloadedDex() {
     }
 }
 
-void Context::InitArtHooker(JNIEnv *env, const lsplant::InitInfo &initInfo) {
-    if (!lsplant::Init(env, initInfo)) {
-        LOGE("Failed to initialize LSPlant hooking framework.");
+void Context::InitArtHooker(JNIEnv *env, const commplant::InitInfo &initInfo) {
+    if (!commplant::Init(env, initInfo)) {
+        LOGE("Failed to initialize CommPlant hooking framework.");
     }
 }
 
@@ -48,7 +48,7 @@ void Context::InitHooks(JNIEnv *env) {
     // The cookie provides a handle to the native C++ DexFile object in ART memory.
 
     // Retrieve the DexPathList object (holds the array of DEX elements).
-    auto path_list = lsplant::JNI_GetObjectFieldOf(env, inject_class_loader_, "pathList",
+    auto path_list = commplant::JNI_GetObjectFieldOf(env, inject_class_loader_, "pathList",
                                                    "Ldalvik/system/DexPathList;");
     if (!path_list) {
         LOGE("InitHooks: Failed to retrieve 'pathList' from the injected class loader.");
@@ -56,7 +56,7 @@ void Context::InitHooks(JNIEnv *env) {
     }
 
     // Retrieve the 'dexElements' array, which contains the actual DEX files and resources.
-    auto elements = lsplant::JNI_Cast<jobjectArray>(lsplant::JNI_GetObjectFieldOf(
+    auto elements = commplant::JNI_Cast<jobjectArray>(commplant::JNI_GetObjectFieldOf(
         env, path_list, "dexElements", "[Ldalvik/system/DexPathList$Element;"));
     if (!elements) {
         LOGE("InitHooks: Failed to retrieve 'dexElements' from DexPathList.");
@@ -69,7 +69,7 @@ void Context::InitHooks(JNIEnv *env) {
 
         // extract the DexFile Java object from the element.
         auto java_dex_file =
-            lsplant::JNI_GetObjectFieldOf(env, element, "dexFile", "Ldalvik/system/DexFile;");
+            commplant::JNI_GetObjectFieldOf(env, element, "dexFile", "Ldalvik/system/DexFile;");
         if (!java_dex_file) {
             // Not all elements are guaranteed to have a valid DexFile
             // (e.g., resource-only elements).
@@ -80,7 +80,7 @@ void Context::InitHooks(JNIEnv *env) {
         // Retrieve the 'mCookie'. In ART, this field stores the pointer (as a long or object)
         // to the internal native DexFile structure.
         auto cookie =
-            lsplant::JNI_GetObjectFieldOf(env, java_dex_file, "mCookie", "Ljava/lang/Object;");
+            commplant::JNI_GetObjectFieldOf(env, java_dex_file, "mCookie", "Ljava/lang/Object;");
         if (!cookie) {
             LOGW("InitHooks: Could not retrieve 'mCookie' (native handle) from DexFile.");
             continue;
@@ -89,7 +89,7 @@ void Context::InitHooks(JNIEnv *env) {
         // Attempt to modify the internal ART flags for this DEX file.
         // This effectively whitelists the DEX file, treating it as if it were part of
         // the BootClassPath, thereby bypassing Hidden API enforcement policies.
-        if (lsplant::MakeDexFileTrusted(env, cookie.get())) {
+        if (commplant::MakeDexFileTrusted(env, cookie.get())) {
             LOGD("InitHooks: Successfully elevated trust privileges for DexFile.");
         } else {
             LOGW("InitHooks: Failed to elevate trust privileges for DexFile.");
@@ -104,23 +104,23 @@ void Context::InitHooks(JNIEnv *env) {
     jni::RegisterNativeApiBridge(env);
 }
 
-lsplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobject class_loader,
+commplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobject class_loader,
                                                              std::string_view class_name) {
     if (class_loader == nullptr) {
         return {env, nullptr};
     }
     static const auto dex_class_loader_class =
-        lsplant::JNI_NewGlobalRef(env, lsplant::JNI_FindClass(env, "dalvik/system/DexClassLoader"));
-    static jmethodID load_class_mid = lsplant::JNI_GetMethodID(
+        commplant::JNI_NewGlobalRef(env, commplant::JNI_FindClass(env, "dalvik/system/DexClassLoader"));
+    static jmethodID load_class_mid = commplant::JNI_GetMethodID(
         env, dex_class_loader_class, "loadClass", "(Ljava/lang/String;)Ljava/lang/Class;");
     if (!load_class_mid) {
-        load_class_mid = lsplant::JNI_GetMethodID(env, dex_class_loader_class, "findClass",
+        load_class_mid = commplant::JNI_GetMethodID(env, dex_class_loader_class, "findClass",
                                                   "(Ljava/lang/String;)Ljava/lang/Class;");
     }
 
     if (load_class_mid) {
-        auto name_str = lsplant::JNI_NewStringUTF(env, class_name.data());
-        auto result = lsplant::JNI_CallObjectMethod(env, class_loader, load_class_mid, name_str);
+        auto name_str = commplant::JNI_NewStringUTF(env, class_name.data());
+        auto result = commplant::JNI_CallObjectMethod(env, class_loader, load_class_mid, name_str);
         if (result) {
             return result;
         }
@@ -136,4 +136,4 @@ lsplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobjec
     return {env, nullptr};
 }
 
-}  // namespace vector::native
+}  // namespace commposed::native

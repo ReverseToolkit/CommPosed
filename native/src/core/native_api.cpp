@@ -17,13 +17,13 @@
  * @brief Implementation of the native module loading and API provisioning system.
  */
 
-using lsplant::operator""_sym;
+using commplant::operator""_sym;
 /*
  * ===========================================================================================
- * LSPLANT HOOKING DSL (DOMAIN SPECIFIC LANGUAGE) DOCUMENTATION
+ * COMMPLANT HOOKING DSL (DOMAIN SPECIFIC LANGUAGE) DOCUMENTATION
  * ===========================================================================================
  *
- * This source file utilizes the 'lsplant' library, which implements a C++20 Hooking DSL.
+ * This source file utilizes the 'commplant' library, which implements a C++20 Hooking DSL.
  * Unlike traditional C-style hooking (which relies on void* casting, manual trampolines,
  * and global function pointers), this DSL uses compile-time metaprogramming to ensure
  * type safety and encapsulate hooking logic.
@@ -50,7 +50,7 @@ using lsplant::operator""_sym;
  *     - '->*' (Member Pointer Operator) is overloaded to bind the symbol to the lambda.
  *
  *  D. The Template Lambda (The Replacement)
- *     - Syntax: [] <lsplant::Backup auto backup> (Type arg1, Type arg2...) { ... }
+ *     - Syntax: [] <commplant::Backup auto backup> (Type arg1, Type arg2...) { ... }
  *     - This is a C++20 Template Lambda.
  *     - 'backup': Represents the ORIGINAL function (trampoline).
  *                 You call this to execute the original system logic.
@@ -79,7 +79,7 @@ using lsplant::operator""_sym;
  * ===========================================================================================
  */
 
-namespace vector::native {
+namespace commposed::native {
 
 namespace {
 // Mutex to protect access to the global module lists.
@@ -125,7 +125,7 @@ void InitializeApiEntries() {
 void RegisterNativeLib(const std::string &library_name) {
     static bool is_initialized = []() {
         InitializeApiEntries();
-        return InstallNativeAPI(lsplant::InitInfo{
+        return InstallNativeAPI(commplant::InitInfo{
             .inline_hooker =
                 [](void *target, void *replacement) {
                     void *backup = nullptr;
@@ -165,7 +165,7 @@ bool HasEnding(std::string_view fullString, std::string_view ending) {
 
 inline static auto do_dlopen_hook =
     "__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv"_sym.hook->*
-    []<lsplant::Backup auto backup>(const char *name, int flags, const void *extinfo,
+    []<commplant::Backup auto backup>(const char *name, int flags, const void *extinfo,
                                     const void *caller_addr) static -> void * {
     void *handle = backup(name, flags, extinfo, caller_addr);
     const std::string lib_name = (name != nullptr) ? name : "null";
@@ -201,6 +201,6 @@ inline static auto do_dlopen_hook =
     return handle;
 };
 
-bool InstallNativeAPI(const lsplant::HookHandler &handler) { return handler(do_dlopen_hook); }
+bool InstallNativeAPI(const commplant::HookHandler &handler) { return handler(do_dlopen_hook); }
 
-}  // namespace vector::native
+}  // namespace commposed::native

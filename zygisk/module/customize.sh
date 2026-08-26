@@ -54,13 +54,13 @@ extract() {
 # =========================================================
 
 VERSION=$(grep_prop version "${TMPDIR}/module.prop")
-ui_print "- Vector version ${VERSION}"
+ui_print "- CommPosed version ${VERSION}"
 
 # Disable existing LSPosed installation
 LSPOSED_DIR="/data/adb/modules/zygisk_lsposed"
 if [ -d "$LSPOSED_DIR" ]; then
     ui_print "*********************************************************"
-    ui_print "LSPosed installation detected, disabling it for Vector"
+    ui_print "LSPosed installation detected, disabling it for CommPosed"
     touch "$LSPOSED_DIR/disable"
     ui_print "*********************************************************"
 fi
@@ -82,7 +82,7 @@ esac
 ui_print "- Device platform: $ARCH ($ABI32 / $ABI64)"
 
 ui_print "- Extracting root module files"
-for file in module.prop action.sh service.sh uninstall.sh sepolicy.rule framework/vector.dex cli daemon.apk daemon manager.apk; do
+for file in module.prop action.sh service.sh uninstall.sh sepolicy.rule framework/commposed.dex cli daemon.apk daemon manager.apk; do
     extract "$ZIPFILE" "$file" "$MODPATH"
 done
 
@@ -139,4 +139,4 @@ if [ "$(grep_prop ro.maple.enable)" = "1" ]; then
     echo "ro.maple.enable=0" >>"$MODPATH/system.prop"
 fi
 
-ui_print "- Welcome to Vector!"
+ui_print "- Welcome to CommPosed!"

@@ -1,6 +1,6 @@
 # External Dependencies
 
-This directory contains all the external dependencies required to build the Vector framework.
+This directory contains all the external dependencies required to build the CommPosed framework.
 They are included as git submodules to ensure version consistency and timely updating.
 
 ## Native dependencies
@@ -11,7 +11,7 @@ They are included as git submodules to ensure version consistency and timely upd
 -   [fmt](https://github.com/fmtlib/fmt):
     A modern formatting library used for high-performance, type-safe logging throughout the native code.
 
--   [LSPlant](https://github.com/JingMatrix/LSPlant):
+-   [CommPlant](https://github.com/JingMatrix/CommPlant):
     A hooking framework for the Android Runtime (ART). It provides the core functionality for intercepting and modifying Java methods.
 
 -   [xz-embedded](https://github.com/tukaani-project/xz-embedded):

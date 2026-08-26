@@ -2,7 +2,7 @@
 
 #include <jni.h>
 
-namespace vector::native::jni {
+namespace commposed::native::jni {
 
 /**
  * Builds an InMemoryDexClassLoader that defines xposed.dummy.XResourcesSuperClass (extending
@@ -18,4 +18,4 @@ namespace vector::native::jni {
 jobject BuildDummySuperClassLoader(JNIEnv *env, jobject parent, const char *res_super,
                                    const char *ta_super);
 
-}  // namespace vector::native::jni
+}  // namespace commposed::native::jni

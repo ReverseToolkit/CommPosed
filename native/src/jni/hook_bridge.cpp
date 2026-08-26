@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <lsplant.hpp>
+#include <commplant.hpp>
 #include <limits>
 #include <memory>
 #include <shared_mutex>
@@ -301,7 +301,7 @@ void StoreWidened(JNIEnv *env, const PrimitiveWrapper &from, char to, jobject va
 
 }  // namespace
 
-namespace vector::native::jni {
+namespace commposed::native::jni {
 /**
  * @brief JNI method to install a hook on a given method or constructor.
  * @param useModernApi Distinguishes between the legacy and modern callback
@@ -312,7 +312,7 @@ namespace vector::native::jni {
  * @param callback The Java callback object.
  * @return JNI_TRUE on success, JNI_FALSE on failure.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi,
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi,
                          jobject hookMethod, jclass hooker, jint priority, jobject callback) {
     bool newHook = false;
 
@@ -349,16 +349,16 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi
         });
 
     // If this is the first time this method is being hooked,
-    // we need to perform the actual native hook using lsplant.
+    // we need to perform the actual native hook using commplant.
     if (newHook) {
         auto init = env->GetMethodID(hooker, "<init>", "(Ljava/lang/reflect/Executable;)V");
         auto callback_method = env->ToReflectedMethod(
             hooker, env->GetMethodID(hooker, "callback", "([Ljava/lang/Object;)Ljava/lang/Object;"),
             false);
         auto hooker_object = env->NewObject(hooker, init, hookMethod);
-        // Use lsplant to replace the target method with our trampoline.
+        // Use commplant to replace the target method with our trampoline.
         // The returned jobject is a handle to the original method.
-        hook_item->SetBackup(lsplant::Hook(env, hookMethod, hooker_object, callback_method));
+        hook_item->SetBackup(commplant::Hook(env, hookMethod, hooker_object, callback_method));
         env->DeleteLocalRef(hooker_object);
     }
 
@@ -368,7 +368,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi
 
     // Use an RAII monitor to lock the backup object,
     // ensuring thread-safe modification of the callback lists.
-    lsplant::JNIMonitor monitor(env, backup);
+    commplant::JNIMonitor monitor(env, backup);
 
     // Store a global reference to the callback object itself.
     if (useModernApi) {
@@ -382,7 +382,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, hookMethod, jboolean useModernApi
 /**
  * @brief JNI method to remove a previously installed hook callback.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernApi,
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernApi,
                          jobject hookMethod, jobject callback) {
     auto target = env->FromReflectedMethod(hookMethod);
     HookItem *hook_item = nullptr;
@@ -395,7 +395,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernA
     if (!backup) return JNI_FALSE;
 
     // Lock to safely modify the callback list.
-    lsplant::JNIMonitor monitor(env, backup);
+    commplant::JNIMonitor monitor(env, backup);
 
     // Select the correct multimap
     auto &callbacks = useModernApi ? hook_item->modern_callbacks : hook_item->legacy_callbacks;
@@ -430,7 +430,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, unhookMethod, jboolean useModernA
  *
  * @return JNI_TRUE when oldCallback was found and replaced.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, replaceCallback, jboolean useModernApi,
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, replaceCallback, jboolean useModernApi,
                          jobject hookMethod, jobject oldCallback, jobject newCallback,
                          jint newPriority) {
     auto target = env->FromReflectedMethod(hookMethod);
@@ -442,7 +442,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, replaceCallback, jboolean useMode
     jobject backup = hook_item->GetBackup();
     if (!backup) return JNI_FALSE;
 
-    lsplant::JNIMonitor monitor(env, backup);
+    commplant::JNIMonitor monitor(env, backup);
 
     auto &callbacks = useModernApi ? hook_item->modern_callbacks : hook_item->legacy_callbacks;
 
@@ -470,8 +470,8 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, replaceCallback, jboolean useMode
  * @brief JNI method to request de-optimization of a method.
  * This can be necessary for some types of hooks to work correctly on JIT-compiled methods.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, deoptimizeMethod, jobject hookMethod) {
-    return lsplant::Deoptimize(env, hookMethod);
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, deoptimizeMethod, jobject hookMethod) {
+    return commplant::Deoptimize(env, hookMethod);
 }
 
 /**
@@ -483,12 +483,12 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, deoptimizeMethod, jobject hookMet
  * which does not depend on the reflected object being accessible.
  *
  * The two fallbacks below are what a hook whose installation failed leaves behind: no hook item at
- * all, and the FAILED sentinel. lsplant replaced no entry point in either case, so the executable
+ * all, and the FAILED sentinel. commplant replaced no entry point in either case, so the executable
  * still carries its own body - but the first reaches it through the caller's own reflected object,
  * where ART does run an access check, and the second reports it as a null return the caller cannot
  * tell from a method that returned null. Neither is reachable from the trampoline.
  */
-VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginalMethod, jobject hookMethod,
+COMMPOSED_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginalMethod, jobject hookMethod,
                          jobject thiz, jobjectArray args) {
     auto target = env->FromReflectedMethod(hookMethod);
     HookItem *hook_item = nullptr;
@@ -513,7 +513,7 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginalMethod, jobject hook
  * Constructor#newInstance reports that as InstantiationException, which is what CtorInvoker
  * documents and what this method has always declared.
  */
-VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, allocateObject, jclass cls) {
+COMMPOSED_DEF_NATIVE_METHOD(jobject, HookBridge, allocateObject, jclass cls) {
     static jclass cls_Class = (jclass)env->NewGlobalRef(env->FindClass("java/lang/Class"));
     static auto *const is_interface = env->GetMethodID(cls_Class, "isInterface", "()Z");
     static auto *const is_array = env->GetMethodID(cls_Class, "isArray", "()Z");
@@ -549,7 +549,7 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, allocateObject, jclass cls) {
  * It also performs no argument or receiver check, and a violation is not reported but executed, so
  * everything reflection would refuse is refused here first.
  */
-VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable, jcharArray shorty,
+COMMPOSED_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable, jcharArray shorty,
                          jobjectArray parameter_types, jclass declaring_class, jboolean is_static,
                          jboolean non_virtual, jobject thiz, jobjectArray args) {
     static jclass cls_ITE =
@@ -573,18 +573,18 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable
                                [&hook_item](const auto &it) { hook_item = it.second.get(); });
 
     if (hook_item) {
-        // lsplant hooks by rewriting this ArtMethod's entry point, and CallNonvirtual only skips
+        // commplant hooks by rewriting this ArtMethod's entry point, and CallNonvirtual only skips
         // the vtable lookup rather than the entry point, so the original body is reachable through
-        // the backup alone. No jmethodID can name the backup either - lsplant rewrites a backup's
+        // the backup alone. No jmethodID can name the backup either - commplant rewrites a backup's
         // id to its target's, which is how it keeps the index based ids of a debuggable process
         // meaningful - so it is invoked the one way that reads the ArtMethod off the reflected
-        // object instead: Method.invoke. lsplant made the backup accessible, and private when it is
+        // object instead: Method.invoke. commplant made the backup accessible, and private when it is
         // not static, so that call bypasses access checks and is direct whichever form was asked
         // for, and reflection's own conversions apply to arguments this side has already coerced.
         if (jobject backup = hook_item->GetBackup(); backup) {
             return env->CallObjectMethod(backup, invoke, thiz, args);
         }
-        // A null backup is the failed-hook sentinel. lsplant never replaced the entry point, so
+        // A null backup is the failed-hook sentinel. commplant never replaced the entry point, so
         // the executable still carries its own body and dispatching it is what runs the original.
     }
 
@@ -677,7 +677,7 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable
 
     // JNI spells the call form in the function name rather than taking it as a value, so the three
     // ways to reach a body are three calls for every return kind.
-#define VECTOR_DISPATCH(Kind, member)                                                              \
+#define COMMPOSED_DISPATCH(Kind, member)                                                              \
     ret_val.member =                                                                               \
         is_static     ? env->CallStatic##Kind##MethodA(declaring_class, target, a)                 \
         : non_virtual ? env->CallNonvirtual##Kind##MethodA(thiz, declaring_class, target, a)       \
@@ -685,31 +685,31 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable
 
     switch (returns) {
     case 'I':
-        VECTOR_DISPATCH(Int, i);
+        COMMPOSED_DISPATCH(Int, i);
         break;
     case 'D':
-        VECTOR_DISPATCH(Double, d);
+        COMMPOSED_DISPATCH(Double, d);
         break;
     case 'J':
-        VECTOR_DISPATCH(Long, j);
+        COMMPOSED_DISPATCH(Long, j);
         break;
     case 'F':
-        VECTOR_DISPATCH(Float, f);
+        COMMPOSED_DISPATCH(Float, f);
         break;
     case 'S':
-        VECTOR_DISPATCH(Short, s);
+        COMMPOSED_DISPATCH(Short, s);
         break;
     case 'B':
-        VECTOR_DISPATCH(Byte, b);
+        COMMPOSED_DISPATCH(Byte, b);
         break;
     case 'C':
-        VECTOR_DISPATCH(Char, c);
+        COMMPOSED_DISPATCH(Char, c);
         break;
     case 'Z':
-        VECTOR_DISPATCH(Boolean, z);
+        COMMPOSED_DISPATCH(Boolean, z);
         break;
     case 'L':
-        VECTOR_DISPATCH(Object, l);
+        COMMPOSED_DISPATCH(Object, l);
         break;
     default:
         if (is_static) {
@@ -722,7 +722,7 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable
         break;
     }
 
-#undef VECTOR_DISPATCH
+#undef COMMPOSED_DISPATCH
 
     // The shorty is not read again, and releasing it first is what keeps every JNI call below out
     // of the window in which the call's own exception is still pending.
@@ -757,15 +757,15 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, invokeOriginal, jobject executable
 /**
  * @brief JNI wrapper around IsInstanceOf.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, instanceOf, jobject object, jclass expected_class) {
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, instanceOf, jobject object, jclass expected_class) {
     return env->IsInstanceOf(object, expected_class);
 }
 
 /**
  * @brief JNI wrapper to mark a DEX file loaded from memory as trusted.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, setTrusted, jobject cookie) {
-    return lsplant::MakeDexFileTrusted(env, cookie);
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, setTrusted, jobject cookie) {
+    return commplant::MakeDexFileTrusted(env, cookie);
 }
 
 /**
@@ -787,7 +787,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, setTrusted, jobject cookie) {
  *
  * @return JNI_TRUE when the field is no longer final.
  */
-VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, makeFieldWritable, jobject field, jint modifiers) {
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, makeFieldWritable, jobject field, jint modifiers) {
     constexpr uintptr_t kMinArtFieldAddr = 0x1000u;
 
     // A jfieldID is the ArtField pointer under JniIdType kPointer (the default), so use it directly
@@ -842,7 +842,7 @@ VECTOR_DEF_NATIVE_METHOD(jboolean, HookBridge, makeFieldWritable, jobject field,
  * @return An Object[2][] array where index 0 contains modern callbacks and
  *         index 1 contains legacy callbacks.
  */
-VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass callback_class,
+COMMPOSED_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass callback_class,
                          jobject method) {
     auto target = env->FromReflectedMethod(method);
     HookItem *hook_item = nullptr;
@@ -854,7 +854,7 @@ VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass call
     if (!backup) return nullptr;
 
     // Lock to ensure a consistent snapshot of the callback lists.
-    lsplant::JNIMonitor monitor(env, backup);
+    commplant::JNIMonitor monitor(env, backup);
 
     // Get the generic Object class
     jclass obj_class = env->FindClass("java/lang/Object");
@@ -866,7 +866,7 @@ VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass call
     jobjectArray res = env->NewObjectArray(2, obj_array_class, nullptr);
 
     // Create modern and legacy arrays
-    // Use 'callback_class' (VectorHookRecord) for the modern array for strict type safety
+    // Use 'callback_class' (CommPosedHookRecord) for the modern array for strict type safety
     jobjectArray modern =
         env->NewObjectArray((jsize)hook_item->modern_callbacks.size(), callback_class, nullptr);
     jobjectArray legacy =
@@ -905,7 +905,7 @@ VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, callbackSnapshot, jclass call
  * APIs" and names nothing else, and API 102 offers no resource API of its own, so the wider reading
  * left a module targeting it with no way to touch resources at all.
  */
-VECTOR_DEF_NATIVE_METHOD(jobjectArray, HookBridge, legacyApiPrefixes) {
+COMMPOSED_DEF_NATIVE_METHOD(jobjectArray, HookBridge, legacyApiPrefixes) {
     // In the dotted form the obfuscation map is served in - the same form loadClass receives.
     static constexpr const char *kLegacyKeys[] = {
         "de.robv.android.xposed.",
@@ -980,7 +980,7 @@ static bool IsMapped(uintptr_t addr, size_t len) {
  * @return The static initializer as a reflected object, or nullptr if the class has none or the
  *         layout is not what this relies on.
  */
-VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, findStaticInitializer, jclass target_class,
+COMMPOSED_DEF_NATIVE_METHOD(jobject, HookBridge, findStaticInitializer, jclass target_class,
                          jlongArray art_methods, jlong art_method_size) {
     const jsize count = art_methods ? env->GetArrayLength(art_methods) : 0;
     // One member is enough to anchor the run; the element size is a property of the runtime, so
@@ -1047,31 +1047,31 @@ VECTOR_DEF_NATIVE_METHOD(jobject, HookBridge, findStaticInitializer, jclass targ
 
 // Array of native method descriptors for JNI registration.
 static JNINativeMethod gMethods[] = {
-    VECTOR_NATIVE_METHOD(HookBridge, hookMethod,
+    COMMPOSED_NATIVE_METHOD(HookBridge, hookMethod,
                          "(ZLjava/lang/reflect/Executable;Ljava/lang/Class;ILjava/"
                          "lang/Object;)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, unhookMethod,
+    COMMPOSED_NATIVE_METHOD(HookBridge, unhookMethod,
                          "(ZLjava/lang/reflect/Executable;Ljava/lang/Object;)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, replaceCallback,
+    COMMPOSED_NATIVE_METHOD(HookBridge, replaceCallback,
                          "(ZLjava/lang/reflect/Executable;Ljava/lang/Object;Ljava/"
                          "lang/Object;I)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, deoptimizeMethod, "(Ljava/lang/reflect/Executable;)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, invokeOriginalMethod,
+    COMMPOSED_NATIVE_METHOD(HookBridge, deoptimizeMethod, "(Ljava/lang/reflect/Executable;)Z"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, invokeOriginalMethod,
                          "(Ljava/lang/reflect/Executable;Ljava/lang/Object;[Ljava/"
                          "lang/Object;)Ljava/lang/Object;"),
-    VECTOR_NATIVE_METHOD(HookBridge, invokeOriginal,
+    COMMPOSED_NATIVE_METHOD(HookBridge, invokeOriginal,
                          "(Ljava/lang/reflect/Executable;[C[Ljava/lang/Class;Ljava/"
                          "lang/Class;ZZLjava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
-    VECTOR_NATIVE_METHOD(HookBridge, allocateObject, "(Ljava/lang/Class;)Ljava/lang/Object;"),
-    VECTOR_NATIVE_METHOD(HookBridge, instanceOf, "(Ljava/lang/Object;Ljava/lang/Class;)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, setTrusted, "(Ljava/lang/Object;)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, makeFieldWritable, "(Ljava/lang/reflect/Field;I)Z"),
-    VECTOR_NATIVE_METHOD(HookBridge, callbackSnapshot,
+    COMMPOSED_NATIVE_METHOD(HookBridge, allocateObject, "(Ljava/lang/Class;)Ljava/lang/Object;"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, instanceOf, "(Ljava/lang/Object;Ljava/lang/Class;)Z"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, setTrusted, "(Ljava/lang/Object;)Z"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, makeFieldWritable, "(Ljava/lang/reflect/Field;I)Z"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, callbackSnapshot,
                          "(Ljava/lang/Class;Ljava/lang/reflect/"
                          "Executable;)[[Ljava/lang/Object;"),
-    VECTOR_NATIVE_METHOD(HookBridge, findStaticInitializer,
+    COMMPOSED_NATIVE_METHOD(HookBridge, findStaticInitializer,
                          "(Ljava/lang/Class;[JJ)Ljava/lang/reflect/Executable;"),
-    VECTOR_NATIVE_METHOD(HookBridge, legacyApiPrefixes, "()[Ljava/lang/String;"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, legacyApiPrefixes, "()[Ljava/lang/String;"),
 };
 
 /**
@@ -1084,6 +1084,6 @@ void RegisterHookBridge(JNIEnv *env) {
                               "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
     env->DeleteLocalRef(method);
 
-    REGISTER_VECTOR_NATIVE_METHODS(HookBridge);
+    REGISTER_COMMPOSED_NATIVE_METHODS(HookBridge);
 }
-}  // namespace vector::native::jni
+}  // namespace commposed::native::jni

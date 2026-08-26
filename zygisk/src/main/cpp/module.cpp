@@ -12,7 +12,7 @@
 
 #include "ipc_bridge.h"
 
-namespace vector::native::module {
+namespace commposed::native::module {
 
 // --- Process UID Constants ---
 // Values used to identify special Android processes to avoid injection.
@@ -61,19 +61,19 @@ private:
 };
 
 /**
- * @class VectorModule
- * @brief The core implementation of the Zygisk module for the Vector framework.
+ * @class CommPosedModule
+ * @brief The core implementation of the Zygisk module for the CommPosed framework.
  *
  * This class is the main entry point for Zygisk. It inherits from:
  * - zygisk::ModuleBase:      To receive lifecycle callbacks from the Zygisk loader.
- * - vector::native::Context: To gain the core injection capabilities (DEX loading, ART hooking)
+ * - commposed::native::Context: To gain the core injection capabilities (DEX loading, ART hooking)
  *                            from the 'native' library.
  *
  * It orchestrates the injection process by deciding which processes to target,
  * using the IPCBridge to fetch the framework from the manager service, and then
  * using the Context base to perform the actual injection.
  */
-class VectorModule : public zygisk::ModuleBase, public vector::native::Context {
+class CommPosedModule : public zygisk::ModuleBase, public commposed::native::Context {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override;
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override;
@@ -115,7 +115,7 @@ private:
     JNIEnv *env_ = nullptr;
 
     // --- ART Hooker Configuration ---
-    const lsplant::InitInfo init_info_{
+    const commplant::InitInfo init_info_{
         .inline_hooker =
             [](auto target, auto replace) {
                 void *backup = nullptr;
@@ -126,7 +126,7 @@ private:
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbAddress(symbol); },
         .art_symbol_prefix_resolver =
             [](auto symbol) { return ElfSymbolCache::GetArt()->getSymbPrefixFirstAddress(symbol); },
-        .generated_class_name = "Vector_",
+        .generated_class_name = "CommPosed_",
         .generated_source_name = "Dobby",
     };
 
@@ -136,47 +136,47 @@ private:
 };
 
 // =========================================================================================
-// Implementation of VectorModule
+// Implementation of CommPosedModule
 // =========================================================================================
 
-void VectorModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
+void CommPosedModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
     LOGV("Loading framework DEX into memory (size: {}).", dex.size());
 
     // Get the system ClassLoader. This will be the parent of our new loader.
-    auto classloader_class = lsplant::JNI_FindClass(env, "java/lang/ClassLoader");
+    auto classloader_class = commplant::JNI_FindClass(env, "java/lang/ClassLoader");
     if (!classloader_class) {
         LOGE("Failed to find java.lang.ClassLoader");
         return;
     }
-    auto getsyscl_mid = lsplant::JNI_GetStaticMethodID(
+    auto getsyscl_mid = commplant::JNI_GetStaticMethodID(
         env, classloader_class.get(), "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
     auto system_classloader =
-        lsplant::JNI_CallStaticObjectMethod(env, classloader_class.get(), getsyscl_mid);
+        commplant::JNI_CallStaticObjectMethod(env, classloader_class.get(), getsyscl_mid);
     if (!system_classloader) {
         LOGE("Failed to get SystemClassLoader");
         return;
     }
 
     // Create a Java ByteBuffer wrapping our in-memory DEX data.
-    auto byte_buffer_class = lsplant::JNI_FindClass(env, "java/nio/ByteBuffer");
+    auto byte_buffer_class = commplant::JNI_FindClass(env, "java/nio/ByteBuffer");
     if (!byte_buffer_class) {
         LOGE("Failed to find java.nio.ByteBuffer");
         return;
     }
     auto dex_buffer =
-        lsplant::ScopedLocalRef(env, env->NewDirectByteBuffer(dex.data(), dex.size()));
+        commplant::ScopedLocalRef(env, env->NewDirectByteBuffer(dex.data(), dex.size()));
     if (!dex_buffer) {
         LOGE("Failed to create DirectByteBuffer for DEX.");
         return;
     }
 
     // Create an InMemoryDexClassLoader instance.
-    auto in_memory_cl_class = lsplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader");
+    auto in_memory_cl_class = commplant::JNI_FindClass(env, "dalvik/system/InMemoryDexClassLoader");
     if (!in_memory_cl_class) {
         LOGE("Failed to find InMemoryDexClassLoader.");
         return;
     }
-    auto init_mid = lsplant::JNI_GetMethodID(env, in_memory_cl_class.get(), "<init>",
+    auto init_mid = commplant::JNI_GetMethodID(env, in_memory_cl_class.get(), "<init>",
                                              "(Ljava/nio/ByteBuffer;Ljava/lang/ClassLoader;)V");
     if (!init_mid) {
         LOGE("Failed to find InMemoryDexClassLoader constructor.");
@@ -184,7 +184,7 @@ void VectorModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
     }
 
     auto new_cl =
-        lsplant::ScopedLocalRef(env, env->NewObject(in_memory_cl_class.get(), init_mid,
+        commplant::ScopedLocalRef(env, env->NewObject(in_memory_cl_class.get(), init_mid,
                                                     dex_buffer.get(), system_classloader.get()));
     if (env->ExceptionCheck() || !new_cl) {
         LOGE("Failed to create InMemoryDexClassLoader instance.");
@@ -197,7 +197,7 @@ void VectorModule::LoadDex(JNIEnv *env, PreloadedDex &&dex) {
     LOGV("Framework ClassLoader created successfully.");
 }
 
-void VectorModule::SetupEntryClass(JNIEnv *env) {
+void CommPosedModule::SetupEntryClass(JNIEnv *env) {
     if (!inject_class_loader_) {
         LOGE("Cannot setup entry class: ClassLoader is null.");
         return;
@@ -206,7 +206,7 @@ void VectorModule::SetupEntryClass(JNIEnv *env) {
     // Use the obfuscation map from the config to get the real class name.
     const auto &obfs_map = ConfigBridge::GetInstance()->obfuscation_map();
     std::string entry_class_name;
-    entry_class_name = obfs_map.at("org.matrix.vector.core.") + "Main";
+    entry_class_name = obfs_map.at("org.commposed.core.") + "Main";
 
     // We must find the class through our custom ClassLoader.
     auto entry_class = this->FindClassFromLoader(env, inject_class_loader_, entry_class_name);
@@ -216,21 +216,21 @@ void VectorModule::SetupEntryClass(JNIEnv *env) {
     }
 
     // Store a global reference to the entry class.
-    entry_class_ = lsplant::JNI_NewGlobalRef(env, entry_class);
+    entry_class_ = commplant::JNI_NewGlobalRef(env, entry_class);
     LOGV("Framework entry class '{}' located.", entry_class_name.c_str());
 }
 
-void VectorModule::onLoad(zygisk::Api *api, JNIEnv *env) {
+void CommPosedModule::onLoad(zygisk::Api *api, JNIEnv *env) {
     this->api_ = api;
     this->env_ = env;
 
     // Create two singlton instances for classes Context and ConfigBridge
     instance_.reset(this);
     ConfigImpl::Init();
-    LOGD("Vector Zygisk module loaded");
+    LOGD("CommPosed Zygisk module loaded");
 }
 
-void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
+void CommPosedModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     // Reset state for this new process fork.
     should_inject_ = false;
     is_manager_app_ = false;
@@ -239,7 +239,7 @@ void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     // We identify our manager app by a special UID and
     // grant it internet permissions by adding it to the INET group.
     if (args->uid == kHostPackageUid) {
-        lsplant::JUTFString nice_name_str(env_, args->nice_name);
+        commplant::JUTFString nice_name_str(env_, args->nice_name);
         if (nice_name_str.get() == std::string(kManagerPackageName)) {
             LOGI("Manager app detected. Granting internet permissions.");
             is_manager_app_ = true;
@@ -283,7 +283,7 @@ void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
 
     // --- Injection Decision Logic ---
     // Determine if the current process is a valid target for injection.
-    lsplant::JUTFString nice_name_str(env_, args->nice_name);
+    commplant::JUTFString nice_name_str(env_, args->nice_name);
 
     // An app without a data directory cannot be a target.
     if (!args->app_data_dir) {
@@ -312,7 +312,7 @@ void VectorModule::preAppSpecialize(zygisk::AppSpecializeArgs *args) {
     LOGV("Process '{}' (UID: {}) is marked for injection.", nice_name_str.get(), args->uid);
 }
 
-void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
+void CommPosedModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     if (!should_inject_) {
         SetAllowUnload(true);  // Not a target, allow module to be unloaded.
         return;
@@ -323,7 +323,7 @@ void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     }
 
     // --- Framework Injection ---
-    lsplant::JUTFString nice_name_str(env_, args->nice_name);
+    commplant::JUTFString nice_name_str(env_, args->nice_name);
     LOGD("Asking the daemon about '{}'.", nice_name_str.get());
 
     auto &ipc_bridge = IPCBridge::GetInstance();
@@ -366,7 +366,7 @@ void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
         JNI_FALSE, JNI_FALSE, args->nice_name, args->app_data_dir, binder.get(), is_manager_app_);
 
     if (entered) {
-        LOGV("Injected Vector framework into '{}'.", nice_name_str.get());
+        LOGV("Injected CommPosed framework into '{}'.", nice_name_str.get());
     } else {
         LOGE("Framework entry failed in '{}'; this process runs without Xposed.",
              nice_name_str.get());
@@ -376,7 +376,7 @@ void VectorModule::postAppSpecialize(const zygisk::AppSpecializeArgs *args) {
     SetAllowUnload(false);
 }
 
-void VectorModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
+void CommPosedModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
     // The system server is always a target for injection.
     should_inject_ = true;
     LOGI("System server process detected. Marking for injection.");
@@ -385,7 +385,7 @@ void VectorModule::preServerSpecialize(zygisk::ServerSpecializeArgs *args) {
     IPCBridge::GetInstance().Initialize(env_);
 }
 
-void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
+void CommPosedModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args) {
     if (!should_inject_) {
         SetAllowUnload(true);
         return;
@@ -398,11 +398,11 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
     // for certain services to function correctly after modification.
     if (__system_property_find("ro.vendor.product.ztename")) {
         LOGV("Applying ZTE-specific workaround: setting argv[0] to system_server.");
-        auto process_class = lsplant::ScopedLocalRef(env_, env_->FindClass("android/os/Process"));
+        auto process_class = commplant::ScopedLocalRef(env_, env_->FindClass("android/os/Process"));
         if (process_class) {
             auto set_argv0_mid =
                 env_->GetStaticMethodID(process_class.get(), "setArgV0", "(Ljava/lang/String;)V");
-            auto name_str = lsplant::ScopedLocalRef(env_, env_->NewStringUTF("system_server"));
+            auto name_str = commplant::ScopedLocalRef(env_, env_->NewStringUTF("system_server"));
             if (set_argv0_mid && name_str) {
                 env_->CallStaticVoidMethod(process_class.get(), set_argv0_mid, name_str.get());
             }
@@ -417,7 +417,7 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
     auto &ipc_bridge = IPCBridge::GetInstance();
     std::string bridgeServiceName = "serial";
     bool is_late_inject = (args->runtime_flags & RuntimeFlags::LATE_INJECT) != 0;
-    if (is_late_inject) bridgeServiceName = "serial_vector";
+    if (is_late_inject) bridgeServiceName = "serial_commposed";
     auto system_binder = ipc_bridge.RequestSystemServerBinder(env_, bridgeServiceName);
     if (!system_binder) {
         LOGE("Failed to get system server IPC binder. Aborting injection.");
@@ -454,14 +454,14 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
     this->InitHooks(env_);
     this->SetupEntryClass(env_);
 
-    auto system_name = lsplant::ScopedLocalRef(env_, env_->NewStringUTF("system"));
+    auto system_name = commplant::ScopedLocalRef(env_, env_->NewStringUTF("system"));
     bool entered = this->FindAndCall(
         env_, "forkCommon", "(ZZLjava/lang/String;Ljava/lang/String;Landroid/os/IBinder;)V",
         JNI_TRUE, is_late_inject, system_name.get(), nullptr, manager_binder.get(),
         is_manager_app_);
 
     if (entered) {
-        LOGI("Injected Vector framework into system_server.");
+        LOGI("Injected CommPosed framework into system_server.");
     } else {
         LOGE("Framework entry failed in system_server; it runs without Xposed.");
     }
@@ -469,7 +469,7 @@ void VectorModule::postServerSpecialize(const zygisk::ServerSpecializeArgs *args
     SetAllowUnload(false);
 }
 
-void VectorModule::SetAllowUnload(bool unload) {
+void CommPosedModule::SetAllowUnload(bool unload) {
     if (api_ && unload) {
         LOGD("Allowing Zygisk to unload module library.");
         api_->setOption(zygisk::DLCLOSE_MODULE_LIBRARY);
@@ -485,9 +485,9 @@ void VectorModule::SetAllowUnload(bool unload) {
     }
 }
 
-}  // namespace vector::native::module
+}  // namespace commposed::native::module
 
 // =========================================================================================
 // Zygisk Module Registration
 // =========================================================================================
-REGISTER_ZYGISK_MODULE(vector::native::module::VectorModule);
+REGISTER_ZYGISK_MODULE(commposed::native::module::CommPosedModule);
