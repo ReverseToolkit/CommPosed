@@ -3,7 +3,7 @@ package org.commposed.impl.hooks
 import java.lang.reflect.Executable
 
 /**
- * Adapter for backward compatibility with [XposedBridge.LegacyApiSupport]. Contains state mutations
+ * Adapter for backward compatibility with the legacy hook round. Contains state mutations
  * strictly for legacy module support.
  */
 class CommPosedLegacyCallback<T : Executable>(

@@ -410,9 +410,9 @@ object FileSystem {
     val path = modulePath.resolve(userId.toString()).resolve(packageName).resolve(dir).normalize()
     path.toFile().mkdirs()
 
-    if (SELinux.getFileContext(path.toString()) != "u:object_r:xposed_data:s0") {
+    if (SELinux.getFileContext(path.toString()) != "u:object_r:comm_data:s0") {
       runCatching {
-            setSelinuxContextRecursive(path, "u:object_r:xposed_data:s0")
+            setSelinuxContextRecursive(path, "u:object_r:comm_data:s0")
             if (uid != -1) Os.chown(path.toString(), uid, uid)
             Os.chmod(path.toString(), "755".toInt(8))
           }
@@ -432,9 +432,9 @@ object FileSystem {
    * which is the whole reason the same module loads the same library without trouble in an ordinary
    * process and fails only in system_server.
    *
-   * The way past it is not a new rule but the one this module already ships. xposed_data is a type
+   * The way past it is not a new rule but the one this module already ships. comm_data is a type
    * we declare ourselves, outside the data_file_type attribute that neverallow is written against,
-   * and `allow * xposed_data {file dir} *` already reaches every domain - system_server included.
+   * and `allow * comm_data {file dir} *` already reaches every domain - system_server included.
    * A copy placed under it is one system_server may map executable. Extraction has a second
    * benefit: the library ends up at offset zero of an ordinary file, so it no longer has to be
    * stored uncompressed and page-aligned inside the APK to be mappable at all.
@@ -491,8 +491,8 @@ object FileSystem {
               // the label is what actually decides whether system_server may map these files.
               Os.chmod(dir.parent.toString(), "711".toInt(8))
               Os.chmod(dir.toString(), "711".toInt(8))
-              setSelinuxContextRecursive(dir, "u:object_r:xposed_data:s0")
-              SELinux.setFileContext(dir.parent.toString(), "u:object_r:xposed_data:s0")
+              setSelinuxContextRecursive(dir, "u:object_r:comm_data:s0")
+              SELinux.setFileContext(dir.parent.toString(), "u:object_r:comm_data:s0")
               dir.toString()
             }
           }

@@ -231,7 +231,7 @@ object Dex2OatServer {
     val sockPath = getSockPath()
     Log.d(TAG, "wrapper path: $sockPath")
 
-    val xposedFile = "u:object_r:xposed_file:s0"
+    val commFile = "u:object_r:comm_file:s0"
     val dex2oatExec = "u:object_r:dex2oat_exec:s0"
 
     if (SELinux.checkSELinuxAccess("u:r:dex2oat:s0", dex2oatExec, "file", "execute_no_trans")) {
@@ -239,12 +239,12 @@ object Dex2OatServer {
       SELinux.setFileContext(WRAPPER64, dex2oatExec)
       setSockCreateContext("u:r:dex2oat:s0")
     } else {
-      SELinux.setFileContext(WRAPPER32, xposedFile)
-      SELinux.setFileContext(WRAPPER64, xposedFile)
+      SELinux.setFileContext(WRAPPER32, commFile)
+      SELinux.setFileContext(WRAPPER64, commFile)
       setSockCreateContext("u:r:installd:s0")
     }
-    SELinux.setFileContext(HOOKER32, xposedFile)
-    SELinux.setFileContext(HOOKER64, xposedFile)
+    SELinux.setFileContext(HOOKER32, commFile)
+    SELinux.setFileContext(HOOKER64, commFile)
 
     runCatching {
           // Closed by hand rather than with `use`: LocalServerSocket only implements Closeable

@@ -224,8 +224,10 @@ jobject BuildDummySuperClassLoader(JNIEnv *env, jobject parent, const char *res_
 
     // Create and return a new InMemoryDexClassLoader instance. Released from its scope because it
     // is handed straight back to the caller.
-    return commplant::JNI_NewObject(env, in_memory_classloader, initMid, dex_buffer, parent)
-        .release();
+    auto loader =
+        commplant::JNI_NewObject(env, in_memory_classloader, initMid, dex_buffer, parent);
+    if (loader) commplant::HideClassLoaderDex(env, loader.get());
+    return loader.release();
 }
 
 COMMPOSED_DEF_NATIVE_METHOD(jobject, ResourcesHook, buildDummyClassLoader, jobject parent,

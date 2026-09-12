@@ -129,7 +129,7 @@ fi
 
 ui_print "- Setting permissions"
 set_perm_recursive "$MODPATH" 0 0 0755 0644
-[ -d "$MODPATH/bin" ] && set_perm_recursive "$MODPATH/bin" 0 2000 0755 0755 u:object_r:xposed_file:s0
+[ -d "$MODPATH/bin" ] && set_perm_recursive "$MODPATH/bin" 0 2000 0755 0755 u:object_r:comm_file:s0
 
 set_perm "$MODPATH/daemon" 0 0 0744
 set_perm "$MODPATH/cli" 0 0 0744

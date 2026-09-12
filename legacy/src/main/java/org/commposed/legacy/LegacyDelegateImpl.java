@@ -65,7 +65,7 @@ public class LegacyDelegateImpl implements LegacyFrameworkDelegate {
     @Override
     public Object processLegacyHook(Executable executable, Object thisObject, Object[] args, Object[] legacyHooks, OriginalInvoker invokeOriginal) {
         CommPosedLegacyCallback<Executable> callback = new CommPosedLegacyCallback<>(executable, thisObject, args);
-        XposedBridge.LegacyApiSupport<Executable> legacy = new XposedBridge.LegacyApiSupport<>(callback, legacyHooks);
+        HookRound<Executable> legacy = new HookRound<>(callback, legacyHooks);
 
         legacy.handleBefore();
 

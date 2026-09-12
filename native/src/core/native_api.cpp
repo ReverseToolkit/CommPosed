@@ -91,7 +91,8 @@ std::list<std::string> g_module_native_libs;
 
 // A smart pointer to a memory page that will hold the NativeAPIEntries struct.
 std::unique_ptr<void, std::function<void(void *)>> g_api_page(
-    mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), [](void *ptr) {
+    commplant::MmapHidden(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0),
+    [](void *ptr) {
         if (ptr != MAP_FAILED) {
             munmap(ptr, 4096);
         }

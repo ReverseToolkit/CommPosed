@@ -15,7 +15,7 @@ std::unique_ptr<Context> Context::ReleaseInstance() { return std::move(instance_
 
 Context::PreloadedDex::PreloadedDex(int fd, size_t size) {
     LOGD("Mapping PreloadedDex: fd={}, size={}", fd, size);
-    void *addr = mmap(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
+    void *addr = commplant::MmapHidden(nullptr, size, PROT_READ, MAP_SHARED, fd, 0);
 
     if (addr != MAP_FAILED) {
         addr_ = addr;
@@ -102,6 +102,10 @@ void Context::InitHooks(JNIEnv *env) {
     jni::RegisterResourcesHook(env);
     jni::RegisterHookBridge(env);
     jni::RegisterNativeApiBridge(env);
+
+    if (!commplant::HideClassLoaderDex(env, inject_class_loader_)) {
+        LOGW("InitHooks: Failed to PROT_HIDE framework DEX mappings.");
+    }
 }
 
 commplant::ScopedLocalRef<jclass> Context::FindClassFromLoader(JNIEnv *env, jobject class_loader,

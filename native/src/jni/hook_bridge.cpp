@@ -768,6 +768,10 @@ COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, setTrusted, jobject cookie) {
     return commplant::MakeDexFileTrusted(env, cookie);
 }
 
+COMMPOSED_DEF_NATIVE_METHOD(jboolean, HookBridge, hideClassLoaderDex, jobject class_loader) {
+    return commplant::HideClassLoaderDex(env, class_loader);
+}
+
 /**
  * @brief Clears ACC_FINAL on a field, so that reflection will write it again.
  *
@@ -1065,6 +1069,7 @@ static JNINativeMethod gMethods[] = {
     COMMPOSED_NATIVE_METHOD(HookBridge, allocateObject, "(Ljava/lang/Class;)Ljava/lang/Object;"),
     COMMPOSED_NATIVE_METHOD(HookBridge, instanceOf, "(Ljava/lang/Object;Ljava/lang/Class;)Z"),
     COMMPOSED_NATIVE_METHOD(HookBridge, setTrusted, "(Ljava/lang/Object;)Z"),
+    COMMPOSED_NATIVE_METHOD(HookBridge, hideClassLoaderDex, "(Ljava/lang/ClassLoader;)Z"),
     COMMPOSED_NATIVE_METHOD(HookBridge, makeFieldWritable, "(Ljava/lang/reflect/Field;I)Z"),
     COMMPOSED_NATIVE_METHOD(HookBridge, callbackSnapshot,
                          "(Ljava/lang/Class;Ljava/lang/reflect/"

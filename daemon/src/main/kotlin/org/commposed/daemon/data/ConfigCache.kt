@@ -128,7 +128,7 @@ object ConfigCache {
           val perms =
               PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx--x--x"))
           Files.createDirectories(state.miscPath!!, perms)
-          FileSystem.setSelinuxContextRecursive(state.miscPath!!, "u:object_r:xposed_data:s0")
+          FileSystem.setSelinuxContextRecursive(state.miscPath!!, "u:object_r:comm_data:s0")
         }
         .onFailure { Log.e(TAG, "Failed to create misc directory", it) }
   }

@@ -24,6 +24,7 @@ import java.io.FileOutputStream
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import org.commposed.ipc.IManagerService
+import org.commposed.nativebridge.HookBridge
 import org.commposed.util.Utils
 import org.commposed.impl.core.CommPosedServiceClient
 
@@ -220,6 +221,7 @@ object ParasiticManagerHooker {
                             Utils.logW("Manager APK not found in ClassLoader, adding manually...")
                             XposedHelpers.callMethod(pathClassLoader, "addDexPath", dexPath)
                         }
+                        HookBridge.hideClassLoaderDex(pathClassLoader)
                         sendBinderToManager(pathClassLoader, managerService.asBinder())
                         classLoaderUnhook!!.unhook() // Only need to inject once
                     }

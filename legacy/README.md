@@ -64,11 +64,11 @@ To mitigate this, the `xposed` module implements `CommPosedDeopter`. During init
 Hook registration is routed from `XposedBridge` to the native layer in [hook_bridge.cpp](../native/src/jni/hook_bridge.cpp). The native environment manages a concurrent global registry to track hooked executables and their associated callbacks.
 When a hooked method executes, the native engine pauses standard execution and routes control back to `xposed`, which invokes the `LegacyFrameworkDelegate.processLegacyHook` interface.
 
-The `LegacyDelegateImpl` translates the modern execution state (`OriginalInvoker`) into the legacy specification. It wraps the invocation state within `LegacyApiSupport` and performs the following execution loop:
+The `LegacyDelegateImpl` translates the modern execution state (`OriginalInvoker`) into the legacy specification. It wraps the invocation state within package-private `HookRound` (not an inner class of `XposedBridge`, so prefix obfuscation can rename it off the hot-path stack) and performs the following execution loop:
 
-1.  Iterates forward through all registered `XC_MethodHook` instances, invoking `beforeHookedMethod`.
+1.  Iterates forward through all registered `XC_MethodHook` instances, invoking `callBeforeHookedMethod`.
 2.  Checks if any module invoked `setResult()` or `setThrowable()`. If the execution was not skipped, it commands the `OriginalInvoker` to proceed with the native method execution.
-3.  Iterates backward through the callbacks, invoking `afterHookedMethod`. If a downstream module threw an exception during execution, `LegacyApiSupport` catches the exception and restores the original cached result or throwable. This protects the host process from unhandled module exceptions.
+3.  Iterates backward through the callbacks, invoking `callAfterHookedMethod`. If a downstream module threw an exception during execution, `HookRound` catches the exception and restores the original cached result or throwable. This protects the host process from unhandled module exceptions.
 
 ## Resource Hooking Subsystem
 
@@ -108,7 +108,7 @@ The classic Xposed API relied on the `Context.MODE_WORLD_READABLE` flag, allowin
 
 To restore `XSharedPreferences` functionality without compromising system stability, the framework implements a coordinated bypass utilizing the out-of-process daemon and runtime path redirection.
 
-The `daemon` module operates with elevated privileges and provisions a specialized safe-zone directory for module configuration sharing. When resolving the module directory, the daemon executes `setSelinuxContextRecursive` to apply the [u:object_r:xposed_data:s0](../zygisk/module/sepolicy.rule) SELinux context. This specific context is universally readable across standard application domains. The daemon subsequently invokes `Os.chmod` to enforce `755` Unix permissions and adjusts directory ownership. This creates a filesystem bridge that both the module and target applications can legally access without violating SELinux isolation.
+The `daemon` module operates with elevated privileges and provisions a specialized safe-zone directory for module configuration sharing. When resolving the module directory, the daemon executes `setSelinuxContextRecursive` to apply the [u:object_r:comm_data:s0](../zygisk/module/sepolicy.rule) SELinux context. This specific context is universally readable across standard application domains. The daemon subsequently invokes `Os.chmod` to enforce `755` Unix permissions and adjusts directory ownership. This creates a filesystem bridge that both the module and target applications can legally access without violating SELinux isolation.
 
 ### Interception and Redirection
 

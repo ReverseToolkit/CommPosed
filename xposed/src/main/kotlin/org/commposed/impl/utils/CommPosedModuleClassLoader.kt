@@ -221,6 +221,7 @@ class CommPosedModuleClassLoader : ByteBufferDexClassLoader {
             dexBuffers.toList().parallelStream().forEach { SharedMemory.unmap(it) }
             dexes.parallelStream().forEach { it.close() }
 
+            HookBridge.hideClassLoaderDex(cl)
             return cl
         }
     }

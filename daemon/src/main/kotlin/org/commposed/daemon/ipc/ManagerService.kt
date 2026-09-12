@@ -186,8 +186,8 @@ object ManagerService : IManagerService.Stub() {
   private fun fixWebViewPermissions(file: File, targetUid: Int) {
     if (!file.exists()) return
 
-    // Set the SELinux label that allows apps to read/write shared xposed data
-    SELinux.setFileContext(file.absolutePath, "u:object_r:xposed_file:s0")
+    // Set the SELinux label that allows apps to read/write shared framework data
+    SELinux.setFileContext(file.absolutePath, "u:object_r:comm_file:s0")
 
     // Change ownership to the target UID (e.g., 2000)
     runCatching { android.system.Os.chown(file.absolutePath, targetUid, targetUid) }

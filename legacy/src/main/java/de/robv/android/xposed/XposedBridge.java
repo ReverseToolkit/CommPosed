@@ -5,10 +5,8 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import org.commposed.util.Log;
 
-import org.commposed.util.Utils;
 import org.commposed.impl.hooks.CommPosedNativeHooker;
 import org.commposed.impl.hooks.CommPosedInvocation;
-import org.commposed.impl.hooks.CommPosedLegacyCallback;
 import org.commposed.nativebridge.HookBridge;
 import org.commposed.nativebridge.ResourcesHook;
 
@@ -367,83 +365,6 @@ public final class XposedBridge {
 
         public synchronized void clear() {
             elements = EMPTY_ARRAY;
-        }
-    }
-
-    public static class LegacyApiSupport<T extends Executable> {
-        private final XC_MethodHook.MethodHookParam<T> param;
-        private final CommPosedLegacyCallback<T> callback;
-        private final Object[] snapshot;
-
-        private int beforeIdx;
-
-        public LegacyApiSupport(CommPosedLegacyCallback<T> callback, Object[] legacySnapshot) {
-            this.param = new XC_MethodHook.MethodHookParam<>();
-            this.callback = callback;
-            this.snapshot = legacySnapshot;
-        }
-
-        public void handleBefore() {
-            syncronizeApi(param, callback, true);
-            for (beforeIdx = 0; beforeIdx < snapshot.length; beforeIdx++) {
-                try {
-                    var cb = (XC_MethodHook) snapshot[beforeIdx];
-                    cb.beforeHookedMethod(param);
-                } catch (Throwable t) {
-                    XposedBridge.log(t);
-                    param.setResult(null);
-                    param.returnEarly = false;
-                }
-
-                if (param.returnEarly) {
-                    beforeIdx++;
-                    break;
-                }
-            }
-            syncronizeApi(param, callback, false);
-        }
-
-        public void handleAfter() {
-            syncronizeApi(param, callback, true);
-            for (int afterIdx = beforeIdx - 1; afterIdx >= 0; afterIdx--) {
-                Object lastResult = param.getResult();
-                Throwable lastThrowable = param.getThrowable();
-                try {
-                    var cb = (XC_MethodHook) snapshot[afterIdx];
-                    cb.afterHookedMethod(param);
-                } catch (Throwable t) {
-                    XposedBridge.log(t);
-                    if (lastThrowable == null) {
-                        param.setResult(lastResult);
-                    } else {
-                        param.setThrowable(lastThrowable);
-                    }
-                }
-            }
-            syncronizeApi(param, callback, false);
-        }
-
-        private void syncronizeApi(XC_MethodHook.MethodHookParam<T> param, CommPosedLegacyCallback<T> callback, boolean forward) {
-            if (forward) {
-                param.method = callback.getMethod();
-                param.thisObject = callback.getThisObject();
-                param.args = callback.getArgs();
-                param.result = callback.getResult();
-                param.throwable = callback.getThrowable();
-                param.returnEarly = callback.isSkipped();
-            } else {
-                callback.setThisObject(param.thisObject);
-                callback.setArgs(param.args);
-
-                // Only write the result/throwable back if the legacy module explicitly skipped execution
-                if (param.returnEarly) {
-                    if (param.throwable != null) {
-                        callback.setThrowable(param.throwable);
-                    } else {
-                        callback.setResult(param.result);
-                    }
-                }
-            }
         }
     }
 }

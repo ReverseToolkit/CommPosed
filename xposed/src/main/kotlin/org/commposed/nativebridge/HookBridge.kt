@@ -99,6 +99,9 @@ object HookBridge {
 
     @JvmStatic @FastNative external fun setTrusted(cookie: Any?): Boolean
 
+    /** PROT_HIDE the VMAs backing every DexFile in [classLoader]. */
+    @JvmStatic @FastNative external fun hideClassLoaderDex(classLoader: ClassLoader?): Boolean
+
     /**
      * Clears the final flag ART reads, so that reflection will write [field] again.
      *
